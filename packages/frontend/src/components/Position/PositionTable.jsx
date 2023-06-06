@@ -6,13 +6,15 @@ import {
 } from '@mui/x-data-grid';
 import useSWR from 'swr';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useCallback, useEffect, useMemo } from 'react';
 import Loading from '../Loading/Loading';
 import { TextField, Tooltip, styled } from '@mui/material';
 import {
+  confirmOrderModal,
   currentInlineEdit,
   inlineEditIndicator,
   inlineEditsSelector,
+  inlineEditsState,
   optionChainRadioModal,
   positionSelector,
 } from '../../utils/state';
@@ -21,6 +23,7 @@ import ShoppingBasketIcon from '@mui/icons-material/ShoppingBasket';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import BackspaceIcon from '@mui/icons-material/Backspace';
+import { produce } from 'immer';
 
 const PositionGrid = styled(DataGrid)(() => ({
   '& .stxl-row-inactive': {
@@ -114,89 +117,111 @@ const CustomQtyEditField = ({ id, value, field }) => {
   );
 };
 
-const columns = [
-  {
-    field: 'expiry',
-    headerName: 'Expiry',
-    width: 140,
-  },
-  {
-    field: 'strike',
-    headerName: 'Strike',
-    width: 100,
-    editable: true,
-    renderCell: (params) => <CustomStrikeField {...params} />,
-  },
-  {
-    field: 'posQty',
-    headerName: 'Qty (lots)',
-    type: 'number',
-    renderEditCell: (params) => <CustomQtyEditField {...params} />,
-    width: 80,
-    renderCell: (params) => <CustomQtyField {...params} />,
-    editable: true,
-  },
-  {
-    field: 'posAvg',
-    headerName: 'Avg',
-    type: 'number',
-    width: 80,
-  },
-  {
-    field: 'lp',
-    headerName: 'LTP',
-    type: 'number',
-    width: 80,
-  },
-  {
-    field: 'pnl',
-    headerName: 'P&L',
-    type: 'number',
-    width: 80,
-  },
-  {
-    field: 'actions',
-    type: 'actions',
-    headerName: 'Actions',
-    width: 300,
-    cellClassName: 'actions',
-    getActions: ({ id }) => {
-      return [
-        <GridActionsCellItem
-          key={1}
-          icon={<ShoppingBasketIcon />}
-          label="Add to Basket"
-          onClick={() => alert(`Add to basket: ${id}`)}
-        />,
-        <GridActionsCellItem
-          key={2}
-          icon={<RocketLaunchIcon />}
-          label="Order Now"
-          onClick={() => alert(`${id}`)}
-        />,
-        <GridActionsCellItem
-          key={3}
-          icon={<RemoveCircleIcon />}
-          label="Delete Strike"
-          onClick={() => alert(`${id}`)}
-        />,
-        <GridActionsCellItem
-          key={3}
-          icon={<BackspaceIcon />}
-          label="Clear changes"
-          onClick={() => alert(`${id}`)}
-        />,
-      ];
-    },
-  },
-];
-
 const PositionTable = () => {
   const { data: positionData } = useSWR('/api/position');
   const setPosition = useSetRecoilState(positionSelector);
   const strikeWiseData = useRecoilValue(inlineEditIndicator);
   const setOpenModal = useSetRecoilState(optionChainRadioModal);
   const setCurrentEdit = useSetRecoilState(currentInlineEdit);
+  const setSelection = useSetRecoilState(inlineEditsState);
+  const setConfirmModal = useSetRecoilState(confirmOrderModal);
+  const resetChanges = useCallback((id) => {
+    setSelection((prev) => {
+      return produce(prev, draft => {
+        delete draft[id];
+        return draft;
+      });
+    })
+  }, [setSelection]);
+
+  const triggerOrder = useCallback((symbol) => {
+    setConfirmModal({ open: true, symbol });
+  }, [setConfirmModal]);
+
+  const columns = useMemo(() => [
+    {
+      field: 'expiry',
+      headerName: 'Expiry',
+      width: 140,
+    },
+    {
+      field: 'strike',
+      headerName: 'Strike',
+      width: 100,
+      editable: true,
+      renderCell: (params) => <CustomStrikeField {...params} />,
+    },
+    {
+      field: 'posQty',
+      headerName: 'Qty (lots)',
+      type: 'number',
+      renderEditCell: (params) => <CustomQtyEditField {...params} />,
+      width: 80,
+      renderCell: (params) => <CustomQtyField {...params} />,
+      editable: true,
+    },
+    {
+      field: 'posAvg',
+      headerName: 'Avg',
+      type: 'number',
+      width: 80,
+    },
+    {
+      field: 'lp',
+      headerName: 'LTP',
+      type: 'number',
+      width: 80,
+    },
+    {
+      field: 'pnl',
+      headerName: 'P&L',
+      type: 'number',
+      width: 80,
+    },
+    {
+      field: 'actions',
+      type: 'actions',
+      headerName: 'Actions',
+      width: 300,
+      cellClassName: 'actions',
+      getActions: ({ id, row }) => {
+        let actions = [];
+        const addToBasket = <GridActionsCellItem
+            key={'ShoppingBasketIcon'}
+            icon={<ShoppingBasketIcon />}
+            label="Add to Basket"
+            onClick={() => triggerOrder(id)}
+          />
+        const orderNow = <GridActionsCellItem
+            key={'RocketLaunchIcon'}
+            icon={<RocketLaunchIcon />}
+            label="Order Now"
+            onClick={() => triggerOrder(id)}
+          />
+        const deleteOrder = <GridActionsCellItem
+            key={'RemoveCircleIcon'}
+            icon={<RemoveCircleIcon />}
+            label="Delete Strike"
+            onClick={() => alert(`${id}`)}
+          />
+        const resetOrder = <GridActionsCellItem
+            key={'BackspaceIcon'}
+            icon={<BackspaceIcon />}
+            label="Clear changes"
+            onClick={() => resetChanges(id)}
+          />
+
+        if (row.strikeEdited || row.qtyEdited) {
+          actions = [addToBasket, orderNow, resetOrder];
+        }
+
+        else {
+          actions = [deleteOrder];
+        }
+        return actions;
+      },
+    },
+  ], [resetChanges, triggerOrder]);
 
   useEffect(() => {
     setPosition(positionData);

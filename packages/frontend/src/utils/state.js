@@ -54,6 +54,14 @@ export const optionChainRadioModal = atom({
   }
 });
 
+export const confirmOrderModal = atom({
+  key: 'confirmOrderModal',
+  default: {
+    open: false,
+    symbol: null,
+  }
+});
+
 export const positionState = atom({
   key: 'positionState',
   default: {},
@@ -311,7 +319,7 @@ export const inlineEditsSelector = selectorFamily({
       return draft;
     });
     set(inlineEditsState, updatedEdits);
-  }
+  },
 });
 
 export const inlineEditIndicator = selector({
@@ -327,11 +335,39 @@ export const inlineEditIndicator = selector({
         pos['prevStrike'] = pos['strike'];
         pos['prevQty'] = pos['posQty'];
         pos['strike'] = inlineEdit['strike'] || pos['strike'];
+        pos['newSymbol'] = inlineEdit['newSymbol'];
         pos['posQty'] = inlineEdit['newQty'] || pos['posQty'];
         pos['strikeEdited'] = pos['strike'] !== pos['prevStrike'];
         pos['qtyEdited'] = pos['posQty'] !== pos['prevQty'];
       }
       return draft;
     });
-  }
+  },
+});
+
+export const orderViewSelector = selector({
+  key: 'orderViewSelector',
+  get: ({ get }) => {
+    const inlineEdits = get(inlineEditIndicator);
+    return produce(inlineEdits, (draft) => {
+      let orderList = {};
+      for (let item of draft) {
+        orderList[item['id']] = [
+          {
+            symbol: item['id'],
+            strike: item['prevStrike'],
+            qty: 0 - item['prevQty'],
+            type: 'remove'
+          },
+          {
+            symbol: item['newSymbol'],
+            strike: item['strike'],
+            qty: item['posQty'],
+            type: 'add'
+          },
+        ]
+      }
+      return orderList;
+    });
+  },
 });

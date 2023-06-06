@@ -17,6 +17,7 @@ import ShoppingBasketIcon from '@mui/icons-material/ShoppingBasket';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import BackspaceIcon from '@mui/icons-material/Backspace';
+import ConfirmOrderModal from '../Position/ConfirmOrderModal';
 
 const socket = io('http://developer.vbox');
 
@@ -92,6 +93,7 @@ const MainPage = () => {
       </Grid>
       <OptionChainModalFull />
       <OptionChainRadioModal />
+      <ConfirmOrderModal />
       <SpeedDial
         ariaLabel="Add Order/Basket"
         sx={{ position: 'absolute', bottom: 20, right: 20 }}
