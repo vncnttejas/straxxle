@@ -27,9 +27,7 @@ const addSup = (num) => {
 
 const computePosition = (orders) => {
   const enrichedPosition = orders.reduce((position, order) => {
-    const { symbol, strike, orderType, qty, txnPrice, tt, index, expiryDate } = order.toJSON();
-    const isBuy = orderType === 'BUY';
-    const orderQty = isBuy ? qty : 0 - qty;
+    const { symbol, strike, qty: orderQty, txnPrice, tt, index, expiryDate } = order.toJSON();
     const orderVal = orderQty * txnPrice;
 
     // Compute Fees - https://zerodha.com/charges/#tab-equities
@@ -42,7 +40,7 @@ const computePosition = (orders) => {
     const totalFees = brokerage + stt + txnCharges + gst + sebi + stamp;
     const fees = { brokerage, stt, txnCharges, gst, sebi, stamp, totalFees };
 
-    const orderDetails = { symbol, strike, orderType, qty, txnPrice, tt, fees };
+    const orderDetails = { symbol, strike, qty, txnPrice, tt, fees };
 
     if (position[symbol]?.['symbol']) {
 

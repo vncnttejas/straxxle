@@ -61,7 +61,7 @@ module.exports = {
           uniqueItemProperties: ['symbol'],
           items: {
             type: 'object',
-            required: ['symbol', 'qty', 'orderType'],
+            required: ['symbol', 'qty'],
             properties: {
               symbol: {
                 type: 'string',
@@ -70,10 +70,6 @@ module.exports = {
               qty: {
                 type: 'number',
                 minimum: 1,
-              },
-              orderType: {
-                type: 'string',
-                enum: ['BUY', 'SELL'],
               },
               tags: {
                 type: 'array',

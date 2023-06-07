@@ -53,11 +53,6 @@ module.exports = {
           },
           qty: {
             type: 'number',
-            minimum: 1,
-          },
-          orderType: {
-            type: 'string',
-            enum: ['BUY', 'SELL'],
           },
           tags: {
             type: 'array',
@@ -67,7 +62,7 @@ module.exports = {
             },
           },
         },
-        required: ['symbol', 'qty', 'orderType'],
+        required: ['symbol', 'qty'],
       },
     },
   }

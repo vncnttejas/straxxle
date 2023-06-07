@@ -1,2 +1,1 @@
 - [ ] Optimize selectors just to hold necessary fields, to avoid unneccessary re-renders
-- [ ] Remove Buy and Sell and change order qty to positive and negative

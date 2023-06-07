@@ -220,7 +220,12 @@ export const basketStateSelector = selectorFamily({
 export const selectedStrikesSelector = selector({
   key: 'selectedStrikesSelector',
   get: ({ get }) => {
-    return get(selectedStrikesState);
+    const strikes = get(selectedStrikesState);
+    return produce(strikes, (draft) => {
+      const sign = draft['orderType'] === 'BUY' ? 1 : -1;
+      delete draft['orderType'];
+      draft['qty'] *= sign;
+    });
   },
   set: ({ get, set, reset }, newValue) => {
     if (newValue instanceof DefaultValue) {

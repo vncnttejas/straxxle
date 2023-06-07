@@ -15,11 +15,6 @@ const OrderSchema = new Schema({
     type: Number,
     required: true,
   },
-  orderType: {
-    type: String,
-    required: true,
-    enum: ['BUY', 'SELL'],
-  },
   tags: {
     type: [ObjectId],
   },
