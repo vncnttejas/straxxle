@@ -6,7 +6,7 @@ import { flatten, values } from 'lodash';
 const ConfirmOrderModal = () => {
   const [{ open, symbol }, setModalOpen] = useRecoilState(confirmOrderModal);
   const inlineEdits = useRecoilValue(orderViewSelector);
-  const orderList = flatten(values(inlineEdits));
+  const orderList = symbol ? inlineEdits[symbol] : flatten(values(inlineEdits));
   return (
     <Dialog
       open={open}

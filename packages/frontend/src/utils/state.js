@@ -352,20 +352,33 @@ export const orderViewSelector = selector({
     return produce(inlineEdits, (draft) => {
       let orderList = {};
       for (let item of draft) {
-        orderList[item['id']] = [
-          {
-            symbol: item['id'],
-            strike: item['prevStrike'],
-            qty: 0 - item['prevQty'],
-            type: 'remove'
-          },
-          {
-            symbol: item['newSymbol'],
-            strike: item['strike'],
-            qty: item['posQty'],
-            type: 'add'
-          },
-        ]
+        let list;
+        if (item['strikeEdited']) {
+          list = [
+            {
+              symbol: item['id'],
+              strike: item['prevStrike'],
+              qty: 0 - item['prevQty'],
+              type: 'remove'
+            },
+            {
+              symbol: item['newSymbol'],
+              strike: item['strike'],
+              qty: item['posQty'],
+              type: 'add'
+            },
+          ];
+        } else {
+          list = [
+            {
+              symbol: item['newSymbol'],
+              strike: item['strike'],
+              qty: item['posQty'] - item['prevQty'],
+              type: 'add'
+            },
+          ];
+        }
+        orderList[item['id']] = list;
       }
       return orderList;
     });
