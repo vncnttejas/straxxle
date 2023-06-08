@@ -29,7 +29,7 @@ module.exports = {
     uri: process.env.MONGO_URI,
     orderLogCollectionName: process.env.LOG_COLL || 'Orders',
     configCollectionName: process.env.CONFIG_COLL || 'Config',
-    tickCollectionName: process.env.CONFIG_COLL || 'TickSnapshot',
+    tickCollectionName: process.env.TICKSNAP_COLL || 'TickSnapshot',
     basketCollectionName: process.env.BASKET_COLL || 'Baskets',
     tagsCollectionName: process.env.TAG_COLL || 'Tags',
   },
