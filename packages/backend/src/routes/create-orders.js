@@ -1,7 +1,8 @@
 const { compact, flatten, uniq } = require('lodash');
 const { Orders } = require('../models/Orders');
 const { Tags } = require('../models/Tags');
-const { getTickerData } = require('../utils/ticker-tape');
+const { getTape } = require('../utils/ticker-tape');
+const { regexp } = require('../utils/symbol-utils');
 
 const lotSize = 50;
 
@@ -15,7 +16,7 @@ const handler = async (req) => {
   }
 
   const enrichedOrders = orders.map((order) => {
-    const strikeSnapshot = getTickerData((strikeData) => strikeData[order.symbol]);
+    const strikeSnapshot = getTape((strikeData) => strikeData[order.symbol]);
     if (order.qty % lotSize !== 0) {
       throw Error(`Order qty can only be multiples of ${lotSize}`);
     }
@@ -54,7 +55,7 @@ module.exports = {
         properties: {
           symbol: {
             type: 'string',
-            pattern: '^(NIFTY|BANKNIFTY|FINNIFTY)[0-9]{2}[A-Z0-9]{3}[0-9]{4,6}[A-Z]{2}$',
+            pattern: regexp,
           },
           qty: {
             type: 'number',

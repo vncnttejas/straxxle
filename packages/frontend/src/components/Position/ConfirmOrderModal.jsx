@@ -9,12 +9,17 @@ import { useCallback } from 'react';
 import axios from 'axios';
 import { mutate } from 'swr';
 import {
-  confirmOrderModal, inlineEditsState, newOrderSnackbarState, orderViewSelector,
+  confirmOrderModal,
+  inlineEditsState,
+  newOrderSnackbarState,
+  orderViewSelector,
+  posGridRowSelectionState,
 } from '../../utils/state';
 
 function ConfirmOrderModal() {
   const [{ open, symbols }, setModalOpen] = useRecoilState(confirmOrderModal);
   const inlineEdits = useRecoilValue(orderViewSelector);
+  const setRowSelection = useResetRecoilState(posGridRowSelectionState);
   const setNewOrderSnackbar = useSetRecoilState(newOrderSnackbarState);
   const resetInlineEdits = useResetRecoilState(inlineEditsState);
   const orderList = symbols?.length
@@ -30,6 +35,7 @@ function ConfirmOrderModal() {
         severity: 'success',
       });
       resetInlineEdits();
+      setRowSelection([]);
       mutate('/api/position');
       setModalOpen({ open: false, symbols: [] });
     } catch (e) {
@@ -41,7 +47,9 @@ function ConfirmOrderModal() {
   return (
     <Dialog
       open={open}
-      onClose={() => setModalOpen({ open: false })}
+      onClose={() => {
+        setModalOpen({ open: false });
+      }}
       variant="permanent"
       maxWidth="md"
       fullWidth
@@ -52,40 +60,32 @@ function ConfirmOrderModal() {
         </Typography>
         <Table sx={{ mb: 3 }}>
           <TableHead>
-            <TableCell>
-              Symbol
-            </TableCell>
-            <TableCell>
-              Strike
-            </TableCell>
-            <TableCell>
-              Expiry
-            </TableCell>
-            <TableCell>
-              Qty (Contracts)
-            </TableCell>
+            <TableCell>Symbol</TableCell>
+            <TableCell>Strike</TableCell>
+            <TableCell>Expiry</TableCell>
+            <TableCell>Qty (Contracts)</TableCell>
           </TableHead>
           <TableBody>
             {orderList.map((order) => (
-              <TableRow key={order.symbol} className={`stxl-row-${order.type}`}>
-                <TableCell>
-                  {order.symbol}
-                </TableCell>
-                <TableCell>
-                  {order.strike}
-                </TableCell>
-                <TableCell>
-                  {order.expiry}
-                </TableCell>
-                <TableCell>
-                  {order.qty}
-                </TableCell>
+              <TableRow
+                key={order.symbol}
+                className={`stxl-row-${order?.type}`}
+              >
+                <TableCell>{order.symbol}</TableCell>
+                <TableCell>{order.strike}</TableCell>
+                <TableCell>{order.expiry}</TableCell>
+                <TableCell>{order.qty}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
         <Box px={5}>
-          <Button variant="contained" color="error" onClick={handleClick} fullWidth>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleClick}
+            fullWidth
+          >
             Order
           </Button>
         </Box>

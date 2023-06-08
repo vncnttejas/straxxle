@@ -1,13 +1,16 @@
 const { app } = require('../server');
-const { tapeGet } = require('../utils/ticker-tape');
+const { getTapeDiff } = require('../utils/ticker-tape');
 
-const handler = async () => {
+const handler = async ({ log }) => {
   setInterval(async () => {
-    const tape = tapeGet();
-    if (Object.keys(tape).length) {
-      (await app).io.emit('tick', tape);
+    const tapeDiff = getTapeDiff();
+    const updatedKeys = Object.keys(tapeDiff);
+    const tapeDiffLength = updatedKeys.length;
+    log.info({ tapeDiffLength }, 'Sending new records');
+    if (tapeDiffLength) {
+      (await app).io.emit('tick', tapeDiff);
     }
-  }, 5000);
+  }, 3000);
   return {
     success: true,
   };

@@ -8,5 +8,6 @@
       "directory": "packages/backend",
       "changeProcessCWD": true,
     }
-  ]
+  ],
+  "editor.formatOnSave": true
 }

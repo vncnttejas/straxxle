@@ -1,7 +1,9 @@
+const { SettingsSchema } = require('../models/ AppSettings');
+
 const handler = async (req) => {
   const { config } = req.body;
-  return Config.create(config);
-}
+  return SettingsSchema.create(config);
+};
 
 module.exports = {
   method: 'POST',

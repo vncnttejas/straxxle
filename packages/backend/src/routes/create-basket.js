@@ -3,7 +3,8 @@ const {
 } = require('lodash');
 const { Baskets } = require('../models/Baskets');
 const { Tags } = require('../models/Tags');
-const { getTickerData } = require('../utils/ticker-tape');
+const { getTape } = require('../utils/ticker-tape');
+const { regexp } = require('../utils/symbol-utils');
 
 const handler = async (req) => {
   // Get all tags from basket and orders and flatten them
@@ -20,7 +21,7 @@ const handler = async (req) => {
 
   // Prepare all orders for saving to DB
   req.body.orders.forEach((order) => {
-    const strikeSnapshot = getTickerData((strikeData) => strikeData[order.symbol]);
+    const strikeSnapshot = getTape((strikeData) => strikeData[order.symbol]);
     if (!strikeSnapshot) {
       throw Error('Strike Not Found');
     }
@@ -67,7 +68,7 @@ module.exports = {
             properties: {
               symbol: {
                 type: 'string',
-                pattern: '^(NIFTY|BANKNIFTY|FINNIFTY)[0-9]{2}([A-Z]|[0-9]){3}[0-9]{4,6}[A-Z]{2}$',
+                pattern: regexp,
               },
               qty: {
                 type: 'number',

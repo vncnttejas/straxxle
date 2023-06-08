@@ -1,8 +1,10 @@
 const fyersApiV2 = require('fyers-api-v2');
 const { memoize } = require('lodash');
-const {
-  syncTickerData, resetTickerData, fetchCurrent, tapeSet,
-} = require('./ticker-tape');
+const { setTape, fetchCurrent } = require('./ticker-tape');
+
+// eslint-disable-next-line prefer-regex-literals
+const regexp = '^NSE:(NIFTY|BANKNIFTY|FINNIFTY)([0-9]{2}[A-Z0-9]{3})([0-9]{3,6})([A-Z]{2})$';
+const optSymbolRegex = new RegExp(regexp);
 
 const fetchStrikeList = (atm, prefix = 'NSE:NIFTY', expiry = '23608', strikeExtreme = 600) => {
   // https://community.fyers.in/post/symbol-format-6120f9828c095908c6387654
@@ -85,15 +87,14 @@ const computeStrikeType = (strikeNum, current, contractType) => {
 };
 
 const processSymbol = (symbol) => {
-  const regex = /^(NIFTY|BANKNIFTY|FINNIFTY)([0-9]{2}[A-Z0-9]{3})([0-9]{3,6})([A-Z]{2})$/;
-  const [_, index, rawExpiry, strikeNum, contractType] = regex.exec(symbol);
+  const [_, index, rawExpiry, strikeNum, contractType] = optSymbolRegex.exec(symbol);
   return {
     index, rawExpiry, strikeNum, contractType,
   };
 };
 
 const processTick = (tick, atm, current) => {
-  const { short_name: symbol, lp } = tick;
+  const { symbol } = tick;
   const {
     index, rawExpiry, strikeNum, contractType,
   } = processSymbol(symbol);
@@ -103,35 +104,18 @@ const processTick = (tick, atm, current) => {
   const strikeDiff = strikeDiffPts / 50;
   const strike = `${strikeNum}${contractType}`;
   return {
-    fullUpdate: {
-      [symbol]: {
-        index,
-        rawExpiry,
-        strike,
-        strikeNum,
-        strikeDiffPts,
-        strikeDiff,
-        strikeType,
-        contractType,
-        expiryType,
-        expiryDate,
-        ...tick,
-      },
-    },
-    quoteUpdate: {
-      [symbol]: {
-        symbol,
-        index,
-        strike,
-        strikeNum,
-        strikeDiffPts,
-        strikeDiff,
-        strikeType,
-        contractType,
-        expiryType,
-        expiryDate,
-        lp,
-      },
+    [symbol]: {
+      index,
+      rawExpiry,
+      strike,
+      strikeNum,
+      strikeDiffPts,
+      strikeDiff,
+      strikeType,
+      contractType,
+      expiryType,
+      expiryDate,
+      ...tick,
     },
   };
 };
@@ -152,16 +136,15 @@ const listenToUpdate = async (cred) => {
     const tickUpdate = JSON.parse(data);
     if (tickUpdate.d?.['7208']?.length) {
       const tick = tickUpdate.d['7208'][0].v;
-      const { fullUpdate, quoteUpdate } = processTick(tick, atm, current);
-      syncTickerData(fullUpdate);
-      tapeSet(quoteUpdate);
-    } else {
-      resetTickerData();
+      const processedTick = processTick(tick, atm, current);
+      setTape(processedTick);
     }
   });
 };
 
 module.exports = {
+  regexp,
+  optSymbolRegex,
   listenToUpdate,
   computeStrikeType,
   fetchStrikeList,

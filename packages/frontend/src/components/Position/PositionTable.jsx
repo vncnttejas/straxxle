@@ -29,6 +29,7 @@ import {
   positionSelector,
 } from '../../utils/state';
 import Loading from '../Loading/Loading';
+import { set } from 'lodash';
 
 const PositionGrid = styled(DataGrid)(() => ({
   '& .stxl-row-inactive': {
@@ -61,7 +62,10 @@ function CustomQtyField({ id, value, row }) {
         <Box>
           <DeleteForeverIcon
             sx={{
-              fontSize: 20, color: 'pink', p: 0, cursor: 'pointer',
+              fontSize: 20,
+              color: 'pink',
+              p: 0,
+              cursor: 'pointer',
             }}
             onClick={() => setVal({ resetQty: id })}
           />
@@ -84,7 +88,10 @@ function CustomStrikeField({ id, value, row }) {
         <Box>
           <DeleteForeverIcon
             sx={{
-              fontSize: 20, color: 'pink', p: 0, cursor: 'pointer',
+              fontSize: 20,
+              color: 'pink',
+              p: 0,
+              cursor: 'pointer',
             }}
             onClick={() => setVal({ resetStrike: id })}
           />
@@ -128,137 +135,156 @@ function CustomQtyEditField({ id, value, field }) {
 
 function PositionTable() {
   const { data: positionData } = useSWR('/api/position');
-  const [rowSelectionModel, setRowSelectionModel] = useRecoilState(posGridRowSelectionState);
-  const { enableOrder, enableDelete, enableClear } = useRecoilValue(actionDisplaySelector);
+  const [rowSelectionModel, setRowSelectionModel] = useRecoilState(
+    posGridRowSelectionState
+  );
+  const { enableOrder, enableDelete, enableClear } = useRecoilValue(
+    actionDisplaySelector
+  );
   const setPosition = useSetRecoilState(positionSelector);
   const strikeWiseData = useRecoilValue(inlineEditIndicator);
   const setOpenModal = useSetRecoilState(optionChainRadioModal);
   const setCurrentEdit = useSetRecoilState(currentInlineEdit);
   const setSelection = useSetRecoilState(inlineEditsState);
   const setConfirmModal = useSetRecoilState(confirmOrderModal);
-  const resetChanges = useCallback((ids) => {
-    setSelection((prev) => {
-      const data = produce(prev, (draft) => {
-        if (ids.length) {
-          for (const id of ids) {
-            delete draft[id];
+  const resetChanges = useCallback(
+    (ids) => {
+      setSelection((prev) => {
+        const data = produce(prev, (draft) => {
+          if (ids.length) {
+            for (const id of ids) {
+              delete draft[id];
+            }
           }
-        }
-        return draft;
+          return draft;
+        });
+        return data;
       });
-      return data;
-    });
-  }, [setSelection]);
+    },
+    [setSelection]
+  );
 
-  const triggerOrder = useCallback((symbols) => {
-    setConfirmModal({ open: true, symbols });
-  }, [setConfirmModal]);
+  const triggerOrder = useCallback(
+    (symbols) => {
+      setConfirmModal({ open: true, symbols });
+    },
+    [setConfirmModal]
+  );
 
-  const closePosition = useCallback((symbol) => {
-    setSelection((prev) => produce(prev, (draft) => {
-      draft[symbol] = {
-        newQty: 0,
-      };
-      return draft;
-    }));
-    setConfirmModal({ open: true, symbol });
-  }, [setConfirmModal, setSelection]);
+  const closePosition = useCallback(
+    (symbols) => {
+      setSelection((prev) =>
+        produce(prev, (draft) => {
+          symbols.forEach((symbol) => {
+            set(draft, `${symbol}.newQty`, 0);
+          });
+          return draft;
+        })
+      );
+      setConfirmModal({ open: true, symbols });
+    },
+    [setConfirmModal, setSelection]
+  );
 
   useEffect(() => {
     setPosition(positionData);
   }, [positionData, setPosition]);
 
-  const handleRowSelection = useCallback((newSelection) => {
-    setRowSelectionModel(newSelection);
-  }, [setRowSelectionModel]);
+  const handleRowSelection = useCallback(
+    (newSelection) => {
+      setRowSelectionModel(newSelection);
+    },
+    [setRowSelectionModel]
+  );
 
-  const columns = useMemo(() => [
-    {
-      field: 'expiry',
-      headerName: 'Expiry',
-      width: 140,
-    },
-    {
-      field: 'strike',
-      headerName: 'Strike',
-      width: 100,
-      editable: true,
-      renderCell: (params) => <CustomStrikeField {...params} />,
-    },
-    {
-      field: 'posQty',
-      headerName: 'Qty (lots)',
-      type: 'number',
-      renderEditCell: (params) => <CustomQtyEditField {...params} />,
-      width: 80,
-      renderCell: (params) => <CustomQtyField {...params} />,
-      editable: true,
-    },
-    {
-      field: 'posAvg',
-      headerName: 'Avg',
-      type: 'number',
-      width: 80,
-    },
-    {
-      field: 'lp',
-      headerName: 'LTP',
-      type: 'number',
-      width: 80,
-    },
-    {
-      field: 'pnl',
-      headerName: 'P&L',
-      type: 'number',
-      width: 80,
-    },
-    {
-      field: 'actions',
-      type: 'actions',
-      headerName: 'Actions',
-      width: 300,
-      cellClassName: 'actions',
-      getActions: ({ id, row }) => {
-        let actions = [];
-        const orderNow = (
-          <GridActionsCellItem
-            key="RocketLaunchIcon"
-            icon={<RocketLaunchIcon />}
-            label="Order Now"
-            onClick={() => triggerOrder([id])}
-          />
-        );
-        const deleteOrder = (
-          <GridActionsCellItem
-            key="RemoveCircleIcon"
-            icon={<RemoveCircleIcon />}
-            label="Delete Strike"
-            onClick={() => closePosition(id)}
-          />
-        );
-        const resetOrder = (
-          <GridActionsCellItem
-            key="BackspaceIcon"
-            icon={<BackspaceIcon />}
-            label="Clear changes"
-            onClick={() => resetChanges([id])}
-          />
-        );
-        if (row.strikeEdited || row.qtyEdited) {
-          actions = [orderNow, resetOrder];
-        } else if (row.posQty) {
-          actions = [deleteOrder];
-        }
-        return actions;
+  const columns = useMemo(
+    () => [
+      {
+        field: 'expiry',
+        headerName: 'Expiry',
+        width: 140,
       },
-    },
-  ], [closePosition, resetChanges, triggerOrder]);
+      {
+        field: 'strike',
+        headerName: 'Strike',
+        width: 100,
+        editable: true,
+        renderCell: (params) => <CustomStrikeField {...params} />,
+      },
+      {
+        field: 'posQty',
+        headerName: 'Qty (lots)',
+        type: 'number',
+        renderEditCell: (params) => <CustomQtyEditField {...params} />,
+        width: 80,
+        renderCell: (params) => <CustomQtyField {...params} />,
+        editable: true,
+      },
+      {
+        field: 'posAvg',
+        headerName: 'Avg',
+        type: 'number',
+        width: 80,
+      },
+      {
+        field: 'lp',
+        headerName: 'LTP',
+        type: 'number',
+        width: 80,
+      },
+      {
+        field: 'pnl',
+        headerName: 'P&L',
+        type: 'number',
+        width: 80,
+      },
+      {
+        field: 'actions',
+        type: 'actions',
+        headerName: 'Actions',
+        width: 300,
+        cellClassName: 'actions',
+        getActions: ({ id, row }) => {
+          let actions = [];
+          const orderNow = (
+            <GridActionsCellItem
+              key="RocketLaunchIcon"
+              icon={<RocketLaunchIcon />}
+              label="Order Now"
+              onClick={() => triggerOrder([id])}
+            />
+          );
+          const deleteOrder = (
+            <GridActionsCellItem
+              key="RemoveCircleIcon"
+              icon={<RemoveCircleIcon />}
+              label="Delete Strike"
+              onClick={() => closePosition([id])}
+            />
+          );
+          const resetOrder = (
+            <GridActionsCellItem
+              key="BackspaceIcon"
+              icon={<BackspaceIcon />}
+              label="Clear changes"
+              onClick={() => resetChanges([id])}
+            />
+          );
+          if (row.strikeEdited || row.qtyEdited) {
+            actions = [orderNow, resetOrder];
+          } else if (row.posQty) {
+            actions = [deleteOrder];
+          }
+          return actions;
+        },
+      },
+    ],
+    [closePosition, resetChanges, triggerOrder]
+  );
 
   return (
     <>
-      <Box
-        sx={{ display: 'flex', gap: 5, justifyContent: 'space-between' }}
-      >
+      <Box sx={{ display: 'flex', gap: 5, justifyContent: 'space-between' }}>
         <Box>
           <Typography variant="h5" mb={2}>
             Position
@@ -266,19 +292,28 @@ function PositionTable() {
         </Box>
         <Box>
           {enableOrder && (
-          <Button sx={{ px: '10px', minWidth: 'unset' }} onClick={() => triggerOrder(rowSelectionModel)}>
-            <RocketLaunchIcon />
-          </Button>
+            <Button
+              sx={{ px: '10px', minWidth: 'unset' }}
+              onClick={() => triggerOrder()}
+            >
+              <RocketLaunchIcon />
+            </Button>
           )}
           {enableDelete && (
-          <Button sx={{ px: '10px', minWidth: 'unset' }} onClick={() => 'a'}>
-            <RemoveCircleIcon />
-          </Button>
+            <Button
+              sx={{ px: '10px', minWidth: 'unset' }}
+              onClick={() => closePosition(rowSelectionModel)}
+            >
+              <RemoveCircleIcon />
+            </Button>
           )}
           {enableClear && (
-          <Button sx={{ px: '10px', minWidth: 'unset' }} onClick={() => resetChanges(rowSelectionModel)}>
-            <BackspaceIcon />
-          </Button>
+            <Button
+              sx={{ px: '10px', minWidth: 'unset' }}
+              onClick={() => resetChanges(rowSelectionModel)}
+            >
+              <BackspaceIcon />
+            </Button>
           )}
         </Box>
       </Box>

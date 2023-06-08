@@ -1,6 +1,7 @@
 - [ ] Fix fee calculation
 - [ ] Optimize selectors just to hold necessary fields, to avoid unneccessary re-renders
-- [ ] When there's an inline edit of 0 on position table the state is reset
+- [ ] Get data from database when no data is provided
+- [ ] Add a marker when the data is sent from db instead of the service
 
 ## Later
 - [ ] Fix eslint

@@ -128,6 +128,7 @@ export const positionSummarySelector = selector({
       pnl: 0,
       mtm: 0,
       total: 0,
+      orderCount: 0,
       fees: {
         brokerage: 0,
         stt: 0,
@@ -148,6 +149,7 @@ export const positionSummarySelector = selector({
           pnl,
           mtm,
           total,
+          orderCount: acc.orderCount + cur.posOrderList.length,
           fees: {
             brokerage: cur.posFees.brokerage + acc.fees.brokerage,
             stt: cur.posFees.stt + acc.fees.stt,
@@ -429,12 +431,13 @@ export const actionDisplaySelector = selector({
       enableDelete: false,
       enableClear: false,
     };
+    const selectedLength = positionsSelected.length;
     const inlineEdits = get(inlineEditsState);
     const inlineEditSymbols = Object.keys(inlineEdits);
     const commonItemLength = intersection(inlineEditSymbols, positionsSelected).length;
     btnDisplayState.enableClear = commonItemLength > 0;
-    btnDisplayState.enableDelete = commonItemLength <= 0;
-    btnDisplayState.enableOrder = commonItemLength === inlineEditSymbols.length;
+    btnDisplayState.enableDelete = selectedLength > 0 && commonItemLength <= 0;
+    btnDisplayState.enableOrder = commonItemLength > 0;
     return btnDisplayState;
   },
 });

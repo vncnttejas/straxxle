@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 const { Forbidden } = require('http-errors');
 const { getStoreData } = require('../utils/data-store');
 

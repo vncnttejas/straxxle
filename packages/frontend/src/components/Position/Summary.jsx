@@ -70,7 +70,9 @@ const FeeBreakup = ({ fees }) => {
 
 const Summary = memo(function Summary() {
   const setCollapse = useSetRecoilState(openFeesCollapseState);
-  const { total, pnl, mtm, fees } = useRecoilValue(positionSummarySelector);
+  const { total, pnl, mtm, fees, orderCount } = useRecoilValue(
+    positionSummarySelector
+  );
   return (
     <TableContainer component={Paper} sx={{ mt: 2, height: 500 }}>
       <Table stickyHeader aria-label="sticky table">
@@ -105,6 +107,10 @@ const Summary = memo(function Summary() {
             >
               {ccyFormat(pnl)}
             </SummaryCell>
+          </TableRow>
+          <TableRow>
+            <SummaryCell>Order Count</SummaryCell>
+            <SummaryCell align="right">{orderCount || 0}</SummaryCell>
           </TableRow>
           <TableRow
             sx={{ cursor: 'pointer' }}

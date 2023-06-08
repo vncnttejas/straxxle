@@ -1,7 +1,7 @@
 import {
   Container, Grid, Typography, SpeedDial, SpeedDialIcon, Paper, styled,
 } from '@mui/material';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import useSWR from 'swr';
 import { io } from 'socket.io-client';
 import { useEffect } from 'react';
@@ -11,7 +11,11 @@ import {
 } from '../OptionChain/OptionChainModal';
 import PositionTable from '../Position/PositionTable';
 import Summary from '../Position/Summary';
-import { optionChainModalState, optionChainState } from '../../utils/state';
+import {
+  confirmOrderModal,
+  optionChainModalState,
+  optionChainState,
+} from '../../utils/state';
 import ConfirmOrderModal from '../Position/ConfirmOrderModal';
 
 const socket = io('http://developer.vbox');
@@ -25,6 +29,7 @@ export const Item = styled(Paper)(({ theme }) => ({
 
 function MainPage() {
   const setOptionChain = useSetRecoilState(optionChainState);
+  const { open: openConfirmModal } = useRecoilValue(confirmOrderModal);
   useSWR('/api/trigger-ticker-socket');
   useEffect(() => {
     const tickUpdate = (data) => {
@@ -65,7 +70,7 @@ function MainPage() {
       </Grid>
       <OptionChainModalFull />
       <OptionChainRadioModal />
-      <ConfirmOrderModal />
+      {openConfirmModal && <ConfirmOrderModal />}
       <SpeedDial
         ariaLabel="Add Order/Basket"
         sx={{ position: 'absolute', bottom: 20, right: 20 }}

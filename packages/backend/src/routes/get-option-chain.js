@@ -1,6 +1,6 @@
-const { getTickerData } = require('../utils/ticker-tape');
+const { getTape } = require('../utils/ticker-tape');
 
-const handler = async () => getTickerData();
+const handler = async () => getTape();
 
 module.exports = {
   method: 'GET',
