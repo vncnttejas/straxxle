@@ -5,25 +5,30 @@ import {
   useGridApiContext,
 } from '@mui/x-data-grid';
 import useSWR from 'swr';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { Suspense, useCallback, useEffect, useMemo } from 'react';
-import Loading from '../Loading/Loading';
-import { TextField, Tooltip, styled } from '@mui/material';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import {
+  Suspense, useCallback, useEffect, useMemo,
+} from 'react';
+import {
+  Button, TextField, Tooltip, Typography, styled,
+} from '@mui/material';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
+import BackspaceIcon from '@mui/icons-material/Backspace';
+import { produce } from 'immer';
+import {
+  actionDisplaySelector,
   confirmOrderModal,
   currentInlineEdit,
   inlineEditIndicator,
   inlineEditsSelector,
   inlineEditsState,
   optionChainRadioModal,
+  posGridRowSelectionState,
   positionSelector,
 } from '../../utils/state';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import ShoppingBasketIcon from '@mui/icons-material/ShoppingBasket';
-import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
-import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
-import BackspaceIcon from '@mui/icons-material/Backspace';
-import { produce } from 'immer';
+import Loading from '../Loading/Loading';
 
 const PositionGrid = styled(DataGrid)(() => ({
   '& .stxl-row-inactive': {
@@ -43,7 +48,7 @@ const PositionGrid = styled(DataGrid)(() => ({
   },
 }));
 
-const CustomQtyField = ({ id, value, row }) => {
+function CustomQtyField({ id, value, row }) {
   const setVal = useSetRecoilState(inlineEditsSelector(id));
   return (
     <>
@@ -55,16 +60,18 @@ const CustomQtyField = ({ id, value, row }) => {
       {row?.qtyEdited && (
         <Box>
           <DeleteForeverIcon
-            sx={{ fontSize: 20, color: 'pink', p: 0, cursor: 'pointer' }}
+            sx={{
+              fontSize: 20, color: 'pink', p: 0, cursor: 'pointer',
+            }}
             onClick={() => setVal({ resetQty: id })}
           />
         </Box>
       )}
     </>
   );
-};
+}
 
-const CustomStrikeField = ({ id, value, row }) => {
+function CustomStrikeField({ id, value, row }) {
   const setVal = useSetRecoilState(inlineEditsSelector(id));
   return (
     <>
@@ -76,16 +83,18 @@ const CustomStrikeField = ({ id, value, row }) => {
       {row?.strikeEdited && (
         <Box>
           <DeleteForeverIcon
-            sx={{ fontSize: 20, color: 'pink', p: 0, cursor: 'pointer' }}
+            sx={{
+              fontSize: 20, color: 'pink', p: 0, cursor: 'pointer',
+            }}
             onClick={() => setVal({ resetStrike: id })}
           />
         </Box>
       )}
     </>
   );
-};
+}
 
-const CustomQtyEditField = ({ id, value, field }) => {
+function CustomQtyEditField({ id, value, field }) {
   const setInlineEdit = useSetRecoilState(inlineEditsSelector(id));
   const setCurrentEdit = useSetRecoilState(currentInlineEdit);
   const apiRef = useGridApiContext();
@@ -115,28 +124,53 @@ const CustomQtyEditField = ({ id, value, field }) => {
       />
     </Box>
   );
-};
+}
 
-const PositionTable = () => {
+function PositionTable() {
   const { data: positionData } = useSWR('/api/position');
+  const [rowSelectionModel, setRowSelectionModel] = useRecoilState(posGridRowSelectionState);
+  const { enableOrder, enableDelete, enableClear } = useRecoilValue(actionDisplaySelector);
   const setPosition = useSetRecoilState(positionSelector);
   const strikeWiseData = useRecoilValue(inlineEditIndicator);
   const setOpenModal = useSetRecoilState(optionChainRadioModal);
   const setCurrentEdit = useSetRecoilState(currentInlineEdit);
   const setSelection = useSetRecoilState(inlineEditsState);
   const setConfirmModal = useSetRecoilState(confirmOrderModal);
-  const resetChanges = useCallback((id) => {
+  const resetChanges = useCallback((ids) => {
     setSelection((prev) => {
-      return produce(prev, draft => {
-        delete draft[id];
+      const data = produce(prev, (draft) => {
+        if (ids.length) {
+          for (const id of ids) {
+            delete draft[id];
+          }
+        }
         return draft;
       });
-    })
+      return data;
+    });
   }, [setSelection]);
 
-  const triggerOrder = useCallback((symbol) => {
-    setConfirmModal({ open: true, symbol });
+  const triggerOrder = useCallback((symbols) => {
+    setConfirmModal({ open: true, symbols });
   }, [setConfirmModal]);
+
+  const closePosition = useCallback((symbol) => {
+    setSelection((prev) => produce(prev, (draft) => {
+      draft[symbol] = {
+        newQty: 0,
+      };
+      return draft;
+    }));
+    setConfirmModal({ open: true, symbol });
+  }, [setConfirmModal, setSelection]);
+
+  useEffect(() => {
+    setPosition(positionData);
+  }, [positionData, setPosition]);
+
+  const handleRowSelection = useCallback((newSelection) => {
+    setRowSelectionModel(newSelection);
+  }, [setRowSelectionModel]);
 
   const columns = useMemo(() => [
     {
@@ -186,117 +220,144 @@ const PositionTable = () => {
       cellClassName: 'actions',
       getActions: ({ id, row }) => {
         let actions = [];
-        const addToBasket = <GridActionsCellItem
-            key={'ShoppingBasketIcon'}
-            icon={<ShoppingBasketIcon />}
-            label="Add to Basket"
-            onClick={() => triggerOrder(id)}
-          />
-        const orderNow = <GridActionsCellItem
-            key={'RocketLaunchIcon'}
+        const orderNow = (
+          <GridActionsCellItem
+            key="RocketLaunchIcon"
             icon={<RocketLaunchIcon />}
             label="Order Now"
-            onClick={() => triggerOrder(id)}
+            onClick={() => triggerOrder([id])}
           />
-        const deleteOrder = <GridActionsCellItem
-            key={'RemoveCircleIcon'}
+        );
+        const deleteOrder = (
+          <GridActionsCellItem
+            key="RemoveCircleIcon"
             icon={<RemoveCircleIcon />}
             label="Delete Strike"
-            onClick={() => alert(`${id}`)}
+            onClick={() => closePosition(id)}
           />
-        const resetOrder = <GridActionsCellItem
-            key={'BackspaceIcon'}
+        );
+        const resetOrder = (
+          <GridActionsCellItem
+            key="BackspaceIcon"
             icon={<BackspaceIcon />}
             label="Clear changes"
-            onClick={() => resetChanges(id)}
+            onClick={() => resetChanges([id])}
           />
-
+        );
         if (row.strikeEdited || row.qtyEdited) {
-          actions = [addToBasket, orderNow, resetOrder];
-        }
-
-        else {
+          actions = [orderNow, resetOrder];
+        } else if (row.posQty) {
           actions = [deleteOrder];
         }
         return actions;
       },
     },
-  ], [resetChanges, triggerOrder]);
-
-  useEffect(() => {
-    setPosition(positionData);
-  }, [positionData, setPosition]);
+  ], [closePosition, resetChanges, triggerOrder]);
 
   return (
-    <Box sx={{ height: 500, width: '100%' }}>
-      <Suspense fallback={<Loading />}>
-        <PositionGrid
-          rows={strikeWiseData}
-          columns={columns}
-          paginationModel={{ page: 0, pageSize: 100 }}
-          hideFooter
-          checkboxSelection
-          disableRowSelectionOnClick
-          disableColumnMenu
-          density="compact"
-          onCellEditStart={(params) => {
-            switch (params.field) {
-              case 'strike':
-                setOpenModal({ open: true });
-                setCurrentEdit({ symbol: params.id });
-                break;
-            }
-          }}
-          getRowClassName={({ row }) => {
-            const prefix = 'stxl-row';
-            const { posQty } = row;
-            if (posQty > 0) {
-              return `${prefix}-long`;
-            }
-            if (posQty < 0) {
-              return `${prefix}-short`;
-            }
-            return `${prefix}-inactive`;
-          }}
-          getCellClassName={({ field, value, row }) => {
-            const prefix = 'stxl-cell';
-            const { posQty, strikeEdited, qtyEdited } = row;
-            if (posQty) {
-              let classList = [];
-              switch (field) {
+    <>
+      <Box
+        sx={{ display: 'flex', gap: 5, justifyContent: 'space-between' }}
+      >
+        <Box>
+          <Typography variant="h5" mb={2}>
+            Position
+          </Typography>
+        </Box>
+        <Box>
+          {enableOrder && (
+          <Button sx={{ px: '10px', minWidth: 'unset' }} onClick={() => triggerOrder(rowSelectionModel)}>
+            <RocketLaunchIcon />
+          </Button>
+          )}
+          {enableDelete && (
+          <Button sx={{ px: '10px', minWidth: 'unset' }} onClick={() => 'a'}>
+            <RemoveCircleIcon />
+          </Button>
+          )}
+          {enableClear && (
+          <Button sx={{ px: '10px', minWidth: 'unset' }} onClick={() => resetChanges(rowSelectionModel)}>
+            <BackspaceIcon />
+          </Button>
+          )}
+        </Box>
+      </Box>
+      <Box sx={{ height: 500, width: '100%' }}>
+        <Suspense fallback={<Loading />}>
+          <PositionGrid
+            rows={strikeWiseData}
+            columns={columns}
+            paginationModel={{ page: 0, pageSize: 100 }}
+            hideFooter
+            checkboxSelection
+            disableRowSelectionOnClick
+            disableColumnMenu
+            density="compact"
+            onRowSelectionModelChange={handleRowSelection}
+            rowSelectionModel={rowSelectionModel}
+            onCellEditStart={(params) => {
+              switch (params.field) {
                 case 'strike':
-                  if (strikeEdited) {
-                    classList.push(`${prefix}-edited`);
-                  }
+                  setOpenModal({ open: true });
+                  setCurrentEdit({ symbol: params.id });
                   break;
-                case 'posQty':
-                  if (value > 0) {
-                    classList.push(`${prefix}-qty-long`);
-                  }
-                  if (value < 0) {
-                    classList.push(`${prefix}-qty-short`);
-                  }
-                  if (qtyEdited) {
-                    classList.push(`${prefix}-edited`);
-                  }
-                  break;
-                case 'pnl':
-                  if (value > 0) {
-                    classList.push(`${prefix}-pnl-positive`);
-                  }
-                  if (value < 0) {
-                    classList.push(`${prefix}-pnl-negative`);
-                  }
+                default:
                   break;
               }
-              return classList.join(' ');
-            }
-          }}
-          isRowSelectable={(params) => params.row.posQty !== 0}
-        />
-      </Suspense>
-    </Box>
+            }}
+            getRowClassName={({ row }) => {
+              const prefix = 'stxl-row';
+              const { posQty } = row;
+              if (posQty > 0) {
+                return `${prefix}-long`;
+              }
+              if (posQty < 0) {
+                return `${prefix}-short`;
+              }
+              return `${prefix}-inactive`;
+            }}
+            getCellClassName={({ field, value, row }) => {
+              const prefix = 'stxl-cell';
+              const { posQty, strikeEdited, qtyEdited } = row;
+              if (posQty) {
+                const classList = [];
+                switch (field) {
+                  case 'strike':
+                    if (strikeEdited) {
+                      classList.push(`${prefix}-edited`);
+                    }
+                    break;
+                  case 'posQty':
+                    if (value > 0) {
+                      classList.push(`${prefix}-qty-long`);
+                    }
+                    if (value < 0) {
+                      classList.push(`${prefix}-qty-short`);
+                    }
+                    if (qtyEdited) {
+                      classList.push(`${prefix}-edited`);
+                    }
+                    break;
+                  case 'pnl':
+                    if (value > 0) {
+                      classList.push(`${prefix}-pnl-positive`);
+                    }
+                    if (value < 0) {
+                      classList.push(`${prefix}-pnl-negative`);
+                    }
+                    break;
+                  default:
+                    break;
+                }
+                return classList.join(' ');
+              }
+            }}
+            isRowSelectable={(params) => params.row.posQty !== 0}
+          />
+        </Suspense>
+      </Box>
+    </>
   );
-};
+}
 
 export default PositionTable;

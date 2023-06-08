@@ -1,22 +1,17 @@
-import { Box, Button, Container, Grid, Typography } from '@mui/material';
+import {
+  Container, Grid, Typography, SpeedDial, SpeedDialIcon, Paper, styled,
+} from '@mui/material';
+import { useSetRecoilState } from 'recoil';
+import useSWR from 'swr';
+import { io } from 'socket.io-client';
+import { useEffect } from 'react';
 import {
   OptionChainModalFull,
   OptionChainRadioModal,
 } from '../OptionChain/OptionChainModal';
-import { SpeedDial, SpeedDialIcon } from '@mui/material';
-import { useSetRecoilState } from 'recoil';
-
 import PositionTable from '../Position/PositionTable';
 import Summary from '../Position/Summary';
-import useSWR from 'swr';
-import { Paper, styled } from '@mui/material';
-import { io } from 'socket.io-client';
-import { useEffect } from 'react';
 import { optionChainModalState, optionChainState } from '../../utils/state';
-import ShoppingBasketIcon from '@mui/icons-material/ShoppingBasket';
-import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
-import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
-import BackspaceIcon from '@mui/icons-material/Backspace';
 import ConfirmOrderModal from '../Position/ConfirmOrderModal';
 
 const socket = io('http://developer.vbox');
@@ -28,7 +23,7 @@ export const Item = styled(Paper)(({ theme }) => ({
   color: theme.palette.text.secondary,
 }));
 
-const MainPage = () => {
+function MainPage() {
   const setOptionChain = useSetRecoilState(optionChainState);
   useSWR('/api/trigger-ticker-socket');
   useEffect(() => {
@@ -49,29 +44,6 @@ const MainPage = () => {
       <Grid container spacing={2} mt={1}>
         <Grid item md={8} xs={12}>
           <Item>
-            <Box
-              sx={{ display: 'flex', gap: 5, justifyContent: 'space-between' }}
-            >
-              <Box>
-                <Typography variant="h5" mb={2}>
-                  Position
-                </Typography>
-              </Box>
-              <Box>
-                <Button sx={{ px: '10px', minWidth: 'unset' }}>
-                  <ShoppingBasketIcon />
-                </Button>
-                <Button sx={{ px: '10px', minWidth: 'unset' }}>
-                  <RocketLaunchIcon />
-                </Button>
-                <Button sx={{ px: '10px', minWidth: 'unset' }}>
-                  <RemoveCircleIcon />
-                </Button>
-                <Button sx={{ px: '10px', minWidth: 'unset' }}>
-                  <BackspaceIcon />
-                </Button>
-              </Box>
-            </Box>
             <PositionTable />
           </Item>
         </Grid>
@@ -102,6 +74,6 @@ const MainPage = () => {
       />
     </Container>
   );
-};
+}
 
 export default MainPage;

@@ -27,7 +27,9 @@ const addSup = (num) => {
 
 const computePosition = (orders) => {
   const enrichedPosition = orders.reduce((position, order) => {
-    const { symbol, strike, qty: orderQty, txnPrice, tt, index, expiryDate } = order.toJSON();
+    const {
+      symbol, strike, qty: orderQty, txnPrice, tt, index, expiryDate,
+    } = order.toJSON();
     const orderVal = orderQty * txnPrice;
 
     // Compute Fees - https://zerodha.com/charges/#tab-equities
@@ -38,28 +40,30 @@ const computePosition = (orders) => {
     const sebi = 10 / 1_00_00_000 * orderVal;
     const stamp = 0.003 / 100 * orderVal;
     const totalFees = brokerage + stt + txnCharges + gst + sebi + stamp;
-    const fees = { brokerage, stt, txnCharges, gst, sebi, stamp, totalFees };
+    const fees = {
+      brokerage, stt, txnCharges, gst, sebi, stamp, totalFees,
+    };
 
-    const orderDetails = { symbol, strike, qty, txnPrice, tt, fees };
+    const orderDetails = {
+      symbol, strike, orderQty, txnPrice, tt, fees,
+    };
 
-    if (position[symbol]?.['symbol']) {
-
+    if (position[symbol]?.symbol) {
       // Compute the position Qty, Value and Average
-      const { posQty, posVal, posAvg, posOrderList, posFees } = position[symbol];
+      const {
+        posQty, posVal, posAvg, posOrderList, posFees,
+      } = position[symbol];
       const cumQty = posQty + orderQty;
       const cumVal = posVal + orderVal;
 
       let cumAvg = 0;
       if (Math.sign(posVal) === Math.sign(orderVal)) {
         cumAvg = cumVal / cumQty;
-      }
-      else if (Math.abs(posQty) > Math.abs(qty)) {
+      } else if (Math.abs(posQty) > Math.abs(orderQty)) {
         cumAvg = posAvg;
-      }
-      else if (Math.abs(posQty) < Math.abs(qty)) {
+      } else if (Math.abs(posQty) < Math.abs(orderQty)) {
         cumAvg = txnPrice;
-      }
-      else if (cumQty === 0) {
+      } else if (cumQty === 0) {
         cumAvg = 0;
       }
 
@@ -91,17 +95,18 @@ const computePosition = (orders) => {
         posAvg: txnPrice,
         posVal: orderVal,
         posOrderList: [orderDetails],
-      }
+      };
     }
     return position;
   }, {});
 
-  const res = _(enrichedPosition).values().sortBy(['tt']).groupBy(({ posQty }) => posQty === 0).value();
-  const open = res['false'] || [];
-  const closed = res['true'] || [];
+  const res = _(enrichedPosition).values().sortBy(['tt']).groupBy(({ posQty }) => posQty === 0)
+    .value();
+  const open = res.false || [];
+  const closed = res.true || [];
   const openPositions = _.sortBy(open, ({ symbol }) => symbol);
   return [...openPositions, ...closed];
-}
+};
 
 const handler = async (req) => {
   const { startTime, endTime } = req.query;

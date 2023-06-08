@@ -1,12 +1,43 @@
-import { Button, Dialog, Paper, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material'
-import { confirmOrderModal, orderViewSelector } from '../../utils/state';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import {
+  Box, Button, Dialog, Paper, Table, TableBody, TableCell, TableHead, TableRow, Typography,
+} from '@mui/material';
+import {
+  useRecoilState, useRecoilValue, useResetRecoilState, useSetRecoilState,
+} from 'recoil';
 import { flatten, values } from 'lodash';
+import { useCallback } from 'react';
+import axios from 'axios';
+import { mutate } from 'swr';
+import {
+  confirmOrderModal, inlineEditsState, newOrderSnackbarState, orderViewSelector,
+} from '../../utils/state';
 
-const ConfirmOrderModal = () => {
-  const [{ open, symbol }, setModalOpen] = useRecoilState(confirmOrderModal);
+function ConfirmOrderModal() {
+  const [{ open, symbols }, setModalOpen] = useRecoilState(confirmOrderModal);
   const inlineEdits = useRecoilValue(orderViewSelector);
-  const orderList = symbol ? inlineEdits[symbol] : flatten(values(inlineEdits));
+  const setNewOrderSnackbar = useSetRecoilState(newOrderSnackbarState);
+  const resetInlineEdits = useResetRecoilState(inlineEditsState);
+  const orderList = symbols?.length
+    ? flatten(symbols.map((symbol) => inlineEdits[symbol]))
+    : flatten(values(inlineEdits));
+
+  const handleClick = useCallback(async () => {
+    try {
+      await axios.post('/api/orders', orderList);
+      setNewOrderSnackbar({
+        open: true,
+        message: 'Order created successfully',
+        severity: 'success',
+      });
+      resetInlineEdits();
+      mutate('/api/position');
+      setModalOpen({ open: false, symbols: [] });
+    } catch (e) {
+      const message = `Order creation failed: ${e.message}`;
+      setNewOrderSnackbar({ open: true, message, severity: 'error' });
+    }
+  }, [orderList, resetInlineEdits, setModalOpen, setNewOrderSnackbar]);
+
   return (
     <Dialog
       open={open}
@@ -16,7 +47,7 @@ const ConfirmOrderModal = () => {
       fullWidth
     >
       <Paper sx={{ width: '100%', minHeight: 400, p: 1 }}>
-        <Typography variant='h5' p={1}>
+        <Typography variant="h5" p={1}>
           Execute Orders
         </Typography>
         <Table sx={{ mb: 3 }}>
@@ -28,39 +59,39 @@ const ConfirmOrderModal = () => {
               Strike
             </TableCell>
             <TableCell>
-              Qty
+              Expiry
             </TableCell>
             <TableCell>
-              Type
+              Qty (Contracts)
             </TableCell>
           </TableHead>
           <TableBody>
-            {orderList.map((order) => {
-              return (
-                <TableRow key={order['symbol']}>
-                  <TableCell>
-                    {order['symbol']}
-                  </TableCell>
-                  <TableCell>
-                    {order['strike']}
-                  </TableCell>
-                  <TableCell>
-                    {order['qty']}
-                  </TableCell>
-                  <TableCell>
-                    {order['type']}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {orderList.map((order) => (
+              <TableRow key={order.symbol} className={`stxl-row-${order.type}`}>
+                <TableCell>
+                  {order.symbol}
+                </TableCell>
+                <TableCell>
+                  {order.strike}
+                </TableCell>
+                <TableCell>
+                  {order.expiry}
+                </TableCell>
+                <TableCell>
+                  {order.qty}
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
-        <Button variant="contained" color="error" fullWidth>
-          Order
-      </Button>
+        <Box px={5}>
+          <Button variant="contained" color="error" onClick={handleClick} fullWidth>
+            Order
+          </Button>
+        </Box>
       </Paper>
     </Dialog>
-  )
-};
+  );
+}
 
 export default ConfirmOrderModal;
