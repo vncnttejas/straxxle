@@ -1,5 +1,5 @@
-const { getStoreData } = require('../utils/data-store');
 const { Forbidden } = require('http-errors');
+const { getStoreData } = require('../utils/data-store');
 
 const handler = async () => {
   const accessToken = getStoreData('accessToken');

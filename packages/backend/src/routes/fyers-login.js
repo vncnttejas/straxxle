@@ -1,16 +1,16 @@
 const config = require('../config');
 
 const handler = async (req, reply) => {
+  // eslint-disable-next-line no-useless-catch
   try {
-    const client_id = config.fyersCred.appId;
-    const redirect_uri = 'http://developer.vbox/api/fyers-token';
-    const redirect = `https://api.fyers.in/api/v2/generate-authcode?client_id=${client_id}&redirect_uri=${redirect_uri}&response_type=code&state=test_env`;
+    const clientId = config.fyersCred.appId;
+    const redirectUri = 'http://developer.vbox/api/fyers-token';
+    const redirect = `https://api.fyers.in/api/v2/generate-authcode?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=test_env`;
     reply.redirect(redirect);
-  }
-  catch (e) {
+  } catch (e) {
     throw e;
   }
-}
+};
 
 module.exports = {
   method: 'GET',

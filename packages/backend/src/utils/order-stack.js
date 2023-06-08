@@ -1,6 +1,6 @@
 const getStrikeByDiff = (strikes, strikeDiff, contractType) => {
   const strikeArray = Object.values(strikes);
-  return strikeArray.find(strike => strike.strikeDiff === strikeDiff && strike.contract === contractType);
+  return strikeArray.find((strike) => strike.strikeDiff === strikeDiff && strike.contract === contractType);
 };
 
 const p2z = (str) => String(str).padStart(2, 0);
@@ -13,7 +13,7 @@ const enrichStrikes = (order, strikeDiff, contractType) => {
     ...order,
     ...strikeData,
     id: order._id.toString(),
-    time
+    time,
   };
   delete enrichedOrder.strikeSnapshot;
   delete enrichedOrder._id;
@@ -77,14 +77,14 @@ class OrderStack extends Stack {
 
   pushOrder(order, strikeDiff) {
     if (this.top === undefined) {
-      const contractType = order.direction === 'up' ? 'CE' : 'PE'
+      const contractType = order.direction === 'up' ? 'CE' : 'PE';
       const enrichedOrder = enrichStrikes(order, strikeDiff, contractType);
       this.push(enrichedOrder);
       const calc = {
         pl: 0,
         turnOver: enrichedOrder.ask * 50,
         type: 'buy',
-        orderData: enrichedOrder
+        orderData: enrichedOrder,
       };
       return enrichSummary(calc);
     }
@@ -96,7 +96,7 @@ class OrderStack extends Stack {
         pl: 0,
         turnOver: enrichedOrder.ask * 50,
         type: 'buy',
-        orderData: enrichedOrder
+        orderData: enrichedOrder,
       };
       return enrichSummary(calc);
     }
@@ -120,7 +120,7 @@ class OrderStack extends Stack {
         turnOver: sellableOrder.ask * 50,
         type: 'sell',
         orderData: sellableOrder,
-      }
+      };
       this.pop();
       return enrichSummary(calc);
     }
@@ -153,4 +153,3 @@ module.exports = {
   orderStack,
   enrichStrikes,
 };
-

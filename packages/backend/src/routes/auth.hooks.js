@@ -12,7 +12,7 @@ module.exports = (app, opt, next) => {
     if (token === undefined || token !== getStoreData('accessToken')) {
       return done({ error: 'Invalid token' });
     }
-    done();
+    return done();
   });
   next();
 };

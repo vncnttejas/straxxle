@@ -25,7 +25,7 @@ module.exports = {
         endTime: {
           type: 'string',
         },
-      }
+      },
     },
-  }
+  },
 };

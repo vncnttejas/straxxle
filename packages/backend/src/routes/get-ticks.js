@@ -8,11 +8,10 @@ const handler = async () => {
       (await app).io.emit('tick', tape);
     }
   }, 5000);
-  // setting this to more than 1 sec, doesn't work for some reason
   return {
     success: true,
   };
-}
+};
 
 module.exports = {
   method: 'GET',

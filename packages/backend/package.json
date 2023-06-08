@@ -22,6 +22,7 @@
     "fastify-socket.io": "^4.0.0",
     "fastify-sse-v2": "^3.1.0",
     "fyers-api-v2": "^1.0.3",
+    "http-errors": "^2.0.0",
     "lodash": "^4.17.21",
     "mongoose": "^6.6.1",
     "socket.io": "^4.6.1"

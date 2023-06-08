@@ -7,7 +7,7 @@ const handler = async (req, reply) => {
   const fyersToken = await fyersApiV2.generate_access_token({
     client_id: config.fyersCred.appId,
     secret_key: config.fyersCred.secretId,
-    ...req.query
+    ...req.query,
   });
   const fyersCred = {
     access_token: fyersToken.access_token,
@@ -18,7 +18,7 @@ const handler = async (req, reply) => {
   await listenToUpdate(fyersCred);
   upsertDataStore({ accessToken: fyersToken.access_token });
   reply.redirect(config.fyersCred.frontendRedirect);
-}
+};
 
 module.exports = {
   method: 'GET',

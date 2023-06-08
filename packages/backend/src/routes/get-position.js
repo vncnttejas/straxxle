@@ -34,11 +34,11 @@ const computePosition = (orders) => {
 
     // Compute Fees - https://zerodha.com/charges/#tab-equities
     const brokerage = 20;
-    const stt = 0.125 / 100 * orderVal;
-    const txnCharges = 0.05 / 100 * orderVal;
-    const gst = 18 / 100 * (brokerage + stt);
-    const sebi = 10 / 1_00_00_000 * orderVal;
-    const stamp = 0.003 / 100 * orderVal;
+    const stt = (0.125 / 100) * orderVal;
+    const txnCharges = (0.05 / 100) * orderVal;
+    const gst = (18 / 100) * (brokerage + stt);
+    const sebi = (10 / 1_00_00_000) * orderVal;
+    const stamp = (0.003 / 100) * orderVal;
     const totalFees = brokerage + stt + txnCharges + gst + sebi + stamp;
     const fees = {
       brokerage, stt, txnCharges, gst, sebi, stamp, totalFees,

@@ -1,4 +1,6 @@
-const { flatten, difference, uniq, compact } = require('lodash');
+const {
+  flatten, difference, uniq, compact,
+} = require('lodash');
 const { Baskets } = require('../models/Baskets');
 const { Tags } = require('../models/Tags');
 const { getTickerData } = require('../utils/ticker-tape');
@@ -18,7 +20,7 @@ const handler = async (req) => {
 
   // Prepare all orders for saving to DB
   req.body.orders.forEach((order) => {
-    const strikeSnapshot = getTickerData((strikeData) => strikeData[order['symbol']]);
+    const strikeSnapshot = getTickerData((strikeData) => strikeData[order.symbol]);
     if (!strikeSnapshot) {
       throw Error('Strike Not Found');
     }
@@ -47,7 +49,7 @@ module.exports = {
           type: 'string',
         },
         description: {
-          type: 'string'
+          type: 'string',
         },
         tags: {
           type: 'array',
@@ -83,5 +85,5 @@ module.exports = {
         },
       },
     },
-  }
+  },
 };

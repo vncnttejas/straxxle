@@ -1,5 +1,5 @@
 const { Orders } = require('../models/Orders');
-const { orderStack } = require('../utils/order-stack');
+const { orderStack } = require('./order-stack');
 
 const getStartnEndDate = (targetDate) => {
   const d = new Date(targetDate);
@@ -14,12 +14,12 @@ const computePosition = async ({ targetDate = new Date(), strikeDiff = -50 }) =>
   const { startTime, endTime } = getStartnEndDate(targetDate);
   const orderList = await Orders.find({
     createdAt: {
-      '$gt': startTime,
-      '$lt': endTime,
+      $gt: startTime,
+      $lt: endTime,
     },
   });
   const orders = [];
-  for (let order of orderList) {
+  for (const order of orderList) {
     orders.push(order.toJSON());
   }
 
@@ -35,9 +35,11 @@ const computePosition = async ({ targetDate = new Date(), strikeDiff = -50 }) =>
   let totalTransaction = 0;
   let totalGst = 0;
   orderStack.clearStack();
-  for (let order of orders) {
+  for (const order of orders) {
     const orderSummary = orderStack.pushOrder(order, strikeDiff);
-    const { pl, charges, turnOver, orderData, type } = orderSummary;
+    const {
+      pl, charges, turnOver, orderData, type,
+    } = orderSummary;
     totalPl += pl;
     totalStt += charges.stt;
     totalStamp += charges.stamp;
@@ -70,8 +72,8 @@ const computePosition = async ({ targetDate = new Date(), strikeDiff = -50 }) =>
       maxTurnOver,
     },
   };
-}
+};
 
 module.exports = {
   computePosition,
-}
+};

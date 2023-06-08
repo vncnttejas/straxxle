@@ -13,7 +13,7 @@ const TagSchema = new Schema({
   type: {
     type: String,
     required: true,
-  }
+  },
 });
 
 const Tags = model(tagsCollectionName, TagSchema);

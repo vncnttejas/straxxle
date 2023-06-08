@@ -11,5 +11,9 @@
   "parserOptions": {
     "ecmaVersion": "latest"
   },
-  "rules": {}
+  "rules": {
+    "no-param-reassign": "off",
+    "no-restricted-syntax": "off",
+    "camelcase": "warn"
+  }
 }
