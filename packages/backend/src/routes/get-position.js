@@ -25,25 +25,28 @@ const addSup = (num) => {
   return `${num - 1}${sup || 'th'}`;
 };
 
+// Compute Fees - https://zerodha.com/charges/#tab-equities
+const computeFees = (orderVal) => {
+  const unsingedOrderVal = Math.abs(orderVal);
+  const brokerage = 20;
+  const stt = (0.125 / 100) * unsingedOrderVal;
+  const txnCharges = (0.05 / 100) * unsingedOrderVal;
+  const gst = (18 / 100) * (brokerage + stt);
+  const sebi = (10 / 1_00_00_000) * unsingedOrderVal;
+  const stamp = (0.003 / 100) * unsingedOrderVal;
+  const totalFees = brokerage + stt + txnCharges + gst + sebi + stamp;
+  return {
+    brokerage, stt, txnCharges, gst, sebi, stamp, totalFees,
+  };
+};
+
 const computePosition = (orders) => {
   const enrichedPosition = orders.reduce((position, order) => {
     const {
       symbol, strike, qty: orderQty, txnPrice, tt, index, expiryDate,
     } = order.toJSON();
     const orderVal = orderQty * txnPrice;
-
-    // Compute Fees - https://zerodha.com/charges/#tab-equities
-    const brokerage = 20;
-    const stt = (0.125 / 100) * orderVal;
-    const txnCharges = (0.05 / 100) * orderVal;
-    const gst = (18 / 100) * (brokerage + stt);
-    const sebi = (10 / 1_00_00_000) * orderVal;
-    const stamp = (0.003 / 100) * orderVal;
-    const totalFees = brokerage + stt + txnCharges + gst + sebi + stamp;
-    const fees = {
-      brokerage, stt, txnCharges, gst, sebi, stamp, totalFees,
-    };
-
+    const fees = computeFees(orderVal);
     const orderDetails = {
       symbol, strike, orderQty, txnPrice, tt, fees,
     };
