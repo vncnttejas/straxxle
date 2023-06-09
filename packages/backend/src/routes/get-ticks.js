@@ -5,9 +5,9 @@ const handler = async ({ log }) => {
   setInterval(async () => {
     const tapeDiff = getTapeDiff();
     const updatedKeys = Object.keys(tapeDiff);
-    const tapeDiffLength = updatedKeys.length;
-    log.info({ tapeDiffLength }, 'Sending new records');
-    if (tapeDiffLength) {
+    const newUpdatesCount = updatedKeys.length;
+    log.info({ newUpdatesCount }, 'Sending new records');
+    if (newUpdatesCount) {
       (await app).io.emit('tick', tapeDiff);
     }
   }, 3000);

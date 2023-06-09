@@ -14,20 +14,19 @@ const bkpArray = [];
 const maxSize = 5;
 let prevSnapshot = {};
 
-const backupTickSnapshot = async (snapshot) => {
+const backupTapeSnapshot = async (snapshot) => {
   const response = await TickSnapshot.create({ snapshot });
   const insertId = response._id.toString();
   bkpArray.push(insertId);
   (await app).log.info({ insertId }, 'Inserting snapshot');
   if (bkpArray.length > maxSize) {
     const firstInsertId = bkpArray.shift();
-    (await app).log.info({ firstInsertId }, 'Removing snapshot');
-    bkpArray.push(insertId);
+    (await app).log.info({ firstInsertId, bkpArrayLength: bkpArray.length }, 'Removing snapshot');
     await TickSnapshot.findByIdAndRemove(firstInsertId);
   }
 };
 
-const throttledSnapshotBkp = _.throttle(backupTickSnapshot, 5000);
+const throttledSnapshotBkp = _.throttle(backupTapeSnapshot, 5000);
 
 const setTape = (newTick) => {
   const symbol = Object.keys(newTick)[0];

@@ -5,8 +5,9 @@ const { setTape, fetchCurrent } = require('./ticker-tape');
 // eslint-disable-next-line prefer-regex-literals
 const regexp = '^NSE:(NIFTY|BANKNIFTY|FINNIFTY)([0-9]{2}[A-Z0-9]{3})([0-9]{3,6})([A-Z]{2})$';
 const optSymbolRegex = new RegExp(regexp);
+const currentExpiry = '23615';
 
-const fetchStrikeList = (atm, prefix = 'NSE:NIFTY', expiry = '23608', strikeExtreme = 600) => {
+const fetchStrikeList = (atm, prefix = 'NSE:NIFTY', expiry = currentExpiry, strikeExtreme = 600) => {
   // https://community.fyers.in/post/symbol-format-6120f9828c095908c6387654
   const fetchStrikeDiff = 50;
   const contractTypes = ['CE', 'PE'];
