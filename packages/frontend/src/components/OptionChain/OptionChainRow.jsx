@@ -65,6 +65,7 @@ const TxnWidget = ({
   handleOrderClick,
   contractType,
   handleQtyChange,
+  disable,
 }) => {
   return (
     <>
@@ -72,11 +73,13 @@ const TxnWidget = ({
         orderType="BUY"
         active={basket['orderType'] === 'BUY'}
         onClick={handleOrderClick}
+        disabled={disable}
       />
       <TxnButton
         orderType="SELL"
         active={basket['orderType'] === 'SELL'}
         onClick={handleOrderClick}
+        disabled={disable}
       />
       <br />
       {basket['qty'] !== '0' && (
@@ -98,11 +101,11 @@ const TxnWidget = ({
 };
 
 export const OptionChainRow = memo(function OptionChainRow({
-  type,
-  symbol,
+  type = 'disabled',
+  symbol = '',
   contractType,
 }) {
-  const price = useRecoilValue(optionChainPriceSelector(symbol));
+  const price = useRecoilValue(optionChainPriceSelector(symbol)) || 0;
   const [basket, setBasket] = useRecoilState(basketStateSelector(symbol));
   const resetBasket = useResetRecoilState(basketStateSelector(symbol));
 
@@ -155,6 +158,7 @@ export const OptionChainRow = memo(function OptionChainRow({
           contractType={contractType}
           handleQtyChange={handleQtyChange}
           handleOrderClick={handleOrderClick}
+          disable={!price}
         />
       </StrikeCell>
       <StrikeCell align="center" className={`${type}-strike`}>
@@ -176,6 +180,7 @@ export const OptionChainRow = memo(function OptionChainRow({
           contractType={contractType}
           handleQtyChange={handleQtyChange}
           handleOrderClick={handleOrderClick}
+          disable={!price}
         />
       </StrikeCell>
     </>

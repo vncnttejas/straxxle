@@ -53,7 +53,7 @@ function CustomQtyField({ id, value, row }) {
   const setVal = useSetRecoilState(inlineEditsSelector(id));
   return (
     <>
-      <Box sx={{ position: 'relative ' }}>
+      <Box>
         <Tooltip title={row?.prevQty || row?.posQty} placement="left">
           <span>{value}</span>
         </Tooltip>

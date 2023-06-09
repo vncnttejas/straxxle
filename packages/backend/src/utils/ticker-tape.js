@@ -1,6 +1,6 @@
 const { quotes: Quotes } = require('fyers-api-v2');
 const { produce } = require('immer');
-const _ = require('lodash');
+const { set, throttle } = require('lodash');
 const { TickSnapshot } = require('../models/Tick');
 const { app } = require('../server');
 
@@ -21,12 +21,13 @@ const backupTapeSnapshot = async (snapshot) => {
   (await app).log.info({ insertId }, 'Inserting snapshot');
   if (bkpArray.length > maxSize) {
     const firstInsertId = bkpArray.shift();
-    (await app).log.info({ firstInsertId, bkpArrayLength: bkpArray.length }, 'Removing snapshot');
+    const logObj = { recordToRemove: firstInsertId, bkpArrayLength: bkpArray.length };
+    (await app).log.info(logObj, 'Removing snapshot');
     await TickSnapshot.findByIdAndRemove(firstInsertId);
   }
 };
 
-const throttledSnapshotBkp = _.throttle(backupTapeSnapshot, 5000);
+const throttledSnapshotBkp = throttle(backupTapeSnapshot, 5000);
 
 const setTape = (newTick) => {
   const symbol = Object.keys(newTick)[0];
@@ -35,7 +36,7 @@ const setTape = (newTick) => {
   });
   subTape = produce(subTape, (draft) => {
     reqFields.forEach((field) => {
-      _.set(draft, `${symbol}.${field}`, newTick[symbol][field]);
+      set(draft, `${symbol}.${field}`, newTick[symbol][field]);
     });
   });
   throttledSnapshotBkp(tape);
@@ -48,17 +49,16 @@ const getTape = (cb) => {
   return cb ? cb(tape) : tape;
 };
 
-const resetTape = () => {
-  tape = {};
-};
-
 const fetchCurrent = async (symbol = 'NSE:NIFTY50-INDEX') => {
   const quotes = new Quotes();
   const current = await quotes.setSymbol(symbol).getQuotes();
   return current.d[0].v.lp;
 };
 
-const getTapeDiff = () => {
+const getTapeDiff = (getAll = false) => {
+  if (getAll) {
+    return subTape;
+  }
   const diff = {};
   for (const strikeData in subTape) {
     if (subTape[strikeData] !== prevSnapshot[strikeData]) {
@@ -72,7 +72,6 @@ const getTapeDiff = () => {
 module.exports = {
   getTape,
   setTape,
-  resetTape,
   fetchCurrent,
   getTapeDiff,
 };

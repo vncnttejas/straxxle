@@ -60,10 +60,12 @@ function ConfirmOrderModal() {
         </Typography>
         <Table sx={{ mb: 3 }}>
           <TableHead>
-            <TableCell>Symbol</TableCell>
-            <TableCell>Strike</TableCell>
-            <TableCell>Expiry</TableCell>
-            <TableCell>Qty (Contracts)</TableCell>
+            <TableRow>
+              <TableCell>Symbol</TableCell>
+              <TableCell>Strike</TableCell>
+              <TableCell>Expiry</TableCell>
+              <TableCell>Qty (Contracts)</TableCell>
+            </TableRow>
           </TableHead>
           <TableBody>
             {orderList.map((order) => (

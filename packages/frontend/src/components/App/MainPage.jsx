@@ -14,6 +14,7 @@ import Summary from '../Position/Summary';
 import {
   confirmOrderModal,
   optionChainModalState,
+  optionChainRadioModal,
   optionChainState,
 } from '../../utils/state';
 import ConfirmOrderModal from '../Position/ConfirmOrderModal';
@@ -30,6 +31,8 @@ export const Item = styled(Paper)(({ theme }) => ({
 function MainPage() {
   const setOptionChain = useSetRecoilState(optionChainState);
   const { open: openConfirmModal } = useRecoilValue(confirmOrderModal);
+  const { open: openRadioModal } = useRecoilValue(optionChainRadioModal);
+  const { open: openChainModal } = useRecoilValue(optionChainModalState);
   useSWR('/api/trigger-ticker-socket');
   useEffect(() => {
     const tickUpdate = (data) => {
@@ -68,8 +71,8 @@ function MainPage() {
           </Item>
         </Grid>
       </Grid>
-      <OptionChainModalFull />
-      <OptionChainRadioModal />
+      {openChainModal && <OptionChainModalFull />}
+      {openRadioModal && <OptionChainRadioModal />}
       {openConfirmModal && <ConfirmOrderModal />}
       <SpeedDial
         ariaLabel="Add Order/Basket"

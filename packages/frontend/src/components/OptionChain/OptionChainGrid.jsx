@@ -12,6 +12,7 @@ import { OptionChainRow, StrikeCell } from './OptionChainRow';
 
 const OptionChainGrid = () => {
   const optionChainStrikes = useRecoilValue(optionChainStrikesSelector);
+  const optionChain = Object.entries(optionChainStrikes);
   return (
     <Paper sx={{ width: '100%', minHeight: 400 }}>
       <TableContainer>
@@ -29,31 +30,29 @@ const OptionChainGrid = () => {
             <TableRow>
               <TableCell align="center">LTP</TableCell>
               <TableCell align="right">Actions</TableCell>
-              <TableCell align="center">Strikes</TableCell>
+              <TableCell align="center">
+                Strikes ({optionChain.length})
+              </TableCell>
               <TableCell>Actions</TableCell>
               <TableCell align="center">LTP</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {Object.entries(optionChainStrikes).map(
-              ([strikeNum, { CE, PE }]) =>
-                CE?.['symbol'] &&
-                PE?.['symbol'] && (
-                  <TableRow key={strikeNum} hover>
-                    <OptionChainRow
-                      symbol={CE['symbol']}
-                      contractType="CE"
-                      type={CE['strikeType']}
-                    />
-                    <StrikeCell align="center">{strikeNum}</StrikeCell>
-                    <OptionChainRow
-                      symbol={PE['symbol']}
-                      contractType="PE"
-                      type={PE['strikeType']}
-                    />
-                  </TableRow>
-                )
-            )}
+            {optionChain.map(([strikeNum, { CE, PE }]) => (
+              <TableRow key={strikeNum} hover>
+                <OptionChainRow
+                  symbol={CE?.['symbol']}
+                  contractType="CE"
+                  type={CE?.['strikeType']}
+                />
+                <StrikeCell align="center">{strikeNum}</StrikeCell>
+                <OptionChainRow
+                  symbol={PE?.['symbol']}
+                  contractType="PE"
+                  type={PE?.['strikeType']}
+                />
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
