@@ -9,7 +9,11 @@ module.exports = {
   port: process.env.APP_PORT,
   host: process.env.NODE_HOST,
   app: {
-    logger: true,
+    logger: {
+      transport: {
+        target: 'pino-pretty',
+      },
+    },
     ajv: {
       customOptions: {
         removeAdditional: true,
@@ -32,5 +36,8 @@ module.exports = {
     tickCollectionName: process.env.TICKSNAP_COLL || 'TickSnapshot',
     basketCollectionName: process.env.BASKET_COLL || 'Baskets',
     tagsCollectionName: process.env.TAG_COLL || 'Tags',
+  },
+  appConstants: {
+    lotSize: 50,
   },
 };

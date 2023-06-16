@@ -3,12 +3,11 @@ const { Orders } = require('../models/Orders');
 const { Tags } = require('../models/Tags');
 const { getTape } = require('../utils/ticker-tape');
 const { regexp } = require('../utils/symbol-utils');
-
-const lotSize = 50;
+const { appConstants } = require('../config');
 
 const handler = async (req) => {
   const orders = req.body;
-
+  const { lotSize } = appConstants;
   const allTags = compact(flatten([...orders.map(({ tags }) => tags)]));
   const foundTags = await Tags.find({ _id: { $in: allTags } });
   if (allTags.length && foundTags.length !== uniq(allTags).length) {

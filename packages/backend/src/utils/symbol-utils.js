@@ -1,11 +1,12 @@
 const fyersApiV2 = require('fyers-api-v2');
 const { memoize } = require('lodash');
+
 const { setTape, fetchCurrent } = require('./ticker-tape');
 
 // eslint-disable-next-line prefer-regex-literals
 const regexp = '^NSE:(NIFTY|BANKNIFTY|FINNIFTY)([0-9]{2}[A-Z0-9]{3})([0-9]{3,6})([A-Z]{2})$';
 const optSymbolRegex = new RegExp(regexp);
-const currentExpiry = '23615';
+const currentExpiry = '23622';
 
 const fetchStrikeList = (atm, prefix = 'NSE:NIFTY', expiry = currentExpiry, strikeExtreme = 600) => {
   // https://community.fyers.in/post/symbol-format-6120f9828c095908c6387654
@@ -22,11 +23,7 @@ const fetchStrikeList = (atm, prefix = 'NSE:NIFTY', expiry = currentExpiry, stri
   return strikes;
 };
 
-const getPrefixFromSymbol = (symbol) => {
-  if (symbol === 'NIFTY') {
-    return 'NSE:NIFTY';
-  }
-};
+const getPrefixFromSymbol = (symbol) => symbol === 'NIFTY' || 'NSE:NIFTY';
 
 const getATMStrikeNumfromCur = (num) => {
   const strikeDiff = 50;

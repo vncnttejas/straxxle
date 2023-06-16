@@ -187,7 +187,7 @@ function PositionTable() {
   );
 
   useEffect(() => {
-    setPosition(positionData);
+    setPosition(positionData.position);
   }, [positionData, setPosition]);
 
   const handleRowSelection = useCallback(
