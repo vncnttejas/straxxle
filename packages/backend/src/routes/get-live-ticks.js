@@ -10,7 +10,6 @@ const {
 } = require('../utils/position');
 
 const memoComputeRawPosition = _.memoize(computeRawPosition);
-const memoComputeSummary = _.memoize(computeSummary);
 const memoSortPositionList = _.memoize(sortPositionList);
 
 const handler = async (req) => {
@@ -24,7 +23,6 @@ const handler = async (req) => {
     if (newUpdatesCount) {
       req.log.info({ newUpdatesCount }, 'Sending new records');
       (await app).io.emit('tick', tapeDiff);
-
       getAll = false;
 
       const orders = await Orders.find({
@@ -33,13 +31,12 @@ const handler = async (req) => {
           $lte: new Date(+endTime),
         },
       });
-
       const positions = memoComputeRawPosition(orders);
       const pnlPosition = computeStrikeWisePnl(positions);
       const sortedPosition = memoSortPositionList(pnlPosition);
-      const summary = memoComputeSummary(sortedPosition);
+      const summary = computeSummary(sortedPosition);
       (await app).io.emit('position', {
-        position: sortedPosition,
+        position: _.keyBy(sortedPosition, 'symbol'),
         summary,
       });
     }

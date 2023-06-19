@@ -1,6 +1,3 @@
-/* eslint-disable no-param-reassign */
-/* eslint-disable no-restricted-syntax */
-/* eslint-disable guard-for-in */
 import {
   DefaultValue, atom, atomFamily, selector, selectorFamily,
 } from 'recoil';
@@ -69,101 +66,12 @@ export const confirmOrderModal = atom({
 
 export const positionState = atom({
   key: 'positionState',
-  default: {},
+  default: [],
 });
 
-export const positionSelector = selector({
-  key: 'positionSelector',
-  get: ({ get }) => get(positionState),
-  set: ({ set }, newValue) => {
-    set(positionState, newValue);
-  },
-});
-
-export const strikeWisePositionState = selector({
-  key: 'strikeWisePositionState',
-  get: ({ get }) => {
-    const positionData = get(positionSelector);
-    const optionChain = get(optionChainState);
-    const { lotSize } = get(appConstants);
-
-    const optionChainKeys = Object.keys(optionChain);
-    const positionDataValues = Object.values(positionData);
-
-    if (!positionDataValues.length || !optionChainKeys.length) {
-      return [];
-    }
-
-    return produce(positionDataValues, (draft) => {
-      for (const pos of draft) {
-        const {
-          posQty, posAvg, posVal, symbol,
-        } = pos;
-        const lp = get(optionChainPriceSelector(symbol));
-        const pnl = posQty ? (lp - posAvg) * posQty : 0 - posVal;
-        pos.id = symbol;
-        pos.lp = lp;
-        pos.pnl = pnl;
-        pos.posQty = posQty / lotSize;
-      }
-      return draft;
-    });
-  },
-});
-
-export const strikeWiseSelectorFam = selectorFamily({
-  key: 'strikeWiseSelectorFam',
-  get: (symbol) => ({ get }) => {
-    const positionData = get(positionSelector);
-    return positionData[symbol];
-  },
-});
-
-export const positionSummarySelector = selector({
-  key: 'positionSummarySelector',
-  get: ({ get }) => {
-    const position = get(strikeWisePositionState);
-    const positionList = Object.values(position);
-    const initialState = {
-      pnl: 0,
-      mtm: 0,
-      total: 0,
-      orderCount: 0,
-      fees: {
-        brokerage: 0,
-        stt: 0,
-        txnCharges: 0,
-        gst: 0,
-        sebi: 0,
-        stamp: 0,
-        totalFees: 0,
-      },
-    };
-    return positionList.reduce(
-      (acc, cur) => {
-        const pnl = cur.posQty ? acc.pnl : acc.pnl + cur.pnl;
-        const mtm = cur.posQty ? acc.mtm + cur.pnl : acc.mtm;
-        const totalFees = cur.posFees.totalFees + acc.fees.totalFees;
-        const total = pnl + mtm - totalFees;
-        return {
-          pnl,
-          mtm,
-          total,
-          orderCount: acc.orderCount + cur.posOrderList.length,
-          fees: {
-            brokerage: cur.posFees.brokerage + acc.fees.brokerage,
-            stt: cur.posFees.stt + acc.fees.stt,
-            txnCharges: cur.posFees.txnCharges + acc.fees.txnCharges,
-            gst: cur.posFees.gst + acc.fees.gst,
-            sebi: cur.posFees.sebi + acc.fees.sebi,
-            stamp: cur.posFees.stamp + acc.fees.stamp,
-            totalFees,
-          },
-        };
-      },
-      initialState,
-    );
-  },
+export const positionSummaryState = atom({
+  key: 'positionSummaryState',
+  default: {}
 });
 
 export const openFeesCollapseState = atom({
@@ -343,8 +251,8 @@ export const inlineEditsSelector = selectorFamily({
 export const inlineEditIndicator = selector({
   key: 'inlineEditIndicator',
   get: ({ get }) => {
-    const strikeWisePosition = get(strikeWisePositionState);
-    return produce(strikeWisePosition, (draft) => {
+    const strikeWisePosition = get(positionState);
+    return produce(Object.values(strikeWisePosition), (draft) => {
       // eslint-disable-next-line no-restricted-syntax
       for (const pos of draft) {
         const inlineEdit = get(inlineEditsSelector(pos.symbol));

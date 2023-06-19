@@ -11,10 +11,7 @@ import {
   Box,
 } from '@mui/material';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import {
-  openFeesCollapseState,
-  positionSummarySelector,
-} from '../../utils/state';
+import { openFeesCollapseState, positionSummaryState } from '../../utils/state';
 import { memo } from 'react';
 
 const ccyFormat = (num) => {
@@ -36,30 +33,30 @@ const FeeBreakup = ({ fees }) => {
             <TableRow>
               <SummaryCell>Brokerage</SummaryCell>
               <SummaryCell align="right">
-                {ccyFormat(fees.brokerage)}
+                {ccyFormat(fees?.brokerage)}
               </SummaryCell>
             </TableRow>
             <TableRow>
               <SummaryCell>STT</SummaryCell>
-              <SummaryCell align="right">{ccyFormat(fees.stt)}</SummaryCell>
+              <SummaryCell align="right">{ccyFormat(fees?.stt)}</SummaryCell>
             </TableRow>
             <TableRow>
               <SummaryCell>Exch. Txn. Charges</SummaryCell>
               <SummaryCell align="right">
-                {ccyFormat(fees.txnCharges)}
+                {ccyFormat(fees?.txnCharges)}
               </SummaryCell>
             </TableRow>
             <TableRow>
               <SummaryCell>GST</SummaryCell>
-              <SummaryCell align="right">{ccyFormat(fees.gst)}</SummaryCell>
+              <SummaryCell align="right">{ccyFormat(fees?.gst)}</SummaryCell>
             </TableRow>
             <TableRow>
               <SummaryCell>SEBI</SummaryCell>
-              <SummaryCell align="right">{ccyFormat(fees.sebi)}</SummaryCell>
+              <SummaryCell align="right">{ccyFormat(fees?.sebi)}</SummaryCell>
             </TableRow>
             <TableRow>
               <SummaryCell>Stamp</SummaryCell>
-              <SummaryCell align="right">{ccyFormat(fees.stamp)}</SummaryCell>
+              <SummaryCell align="right">{ccyFormat(fees?.stamp)}</SummaryCell>
             </TableRow>
           </TableBody>
         </Table>
@@ -70,13 +67,24 @@ const FeeBreakup = ({ fees }) => {
 
 const Summary = memo(function Summary() {
   const setCollapse = useSetRecoilState(openFeesCollapseState);
-  const { total, pnl, mtm, fees, orderCount } = useRecoilValue(
-    positionSummarySelector
-  );
+  const summaryData = useRecoilValue(positionSummaryState);
+  const { exitTotal, total, pnl, mtm, fees, orderCount, exitFees } =
+    summaryData;
   return (
     <TableContainer component={Paper} sx={{ mt: 2, height: 500 }}>
       <Table stickyHeader aria-label="sticky table">
-        <TableHead>
+        <TableBody>
+          <TableRow>
+            <SummaryCell>Final (Exit Total)</SummaryCell>
+            <SummaryCell
+              align="right"
+              className={
+                total === 0 ? '' : total > 0 ? 'stxl-green' : 'stxl-red'
+              }
+            >
+              {ccyFormat(exitTotal)}
+            </SummaryCell>
+          </TableRow>
           <TableRow>
             <SummaryCell>Overall</SummaryCell>
             <SummaryCell
@@ -88,8 +96,6 @@ const Summary = memo(function Summary() {
               {ccyFormat(total)}
             </SummaryCell>
           </TableRow>
-        </TableHead>
-        <TableBody>
           <TableRow>
             <SummaryCell>MTM</SummaryCell>
             <SummaryCell
@@ -112,13 +118,29 @@ const Summary = memo(function Summary() {
             <SummaryCell>Order Count</SummaryCell>
             <SummaryCell align="right">{orderCount || 0}</SummaryCell>
           </TableRow>
+          <TableRow>
+            <SummaryCell>Order Count</SummaryCell>
+            <SummaryCell align="right">{orderCount || 0}</SummaryCell>
+          </TableRow>
+          <TableRow>
+            <SummaryCell>Exit Fees</SummaryCell>
+            <SummaryCell
+              align="right"
+              className={exitFees?.exitTotalFees && 'stxl-red'}
+            >
+              {ccyFormat(0 - exitFees?.exitTotalFees)}
+            </SummaryCell>
+          </TableRow>
           <TableRow
             sx={{ cursor: 'pointer' }}
             onClick={() => setCollapse((prev) => !prev)}
           >
             <SummaryCell>Fees &raquo;</SummaryCell>
-            <SummaryCell align="right" className={fees.totalFees && 'stxl-red'}>
-              {ccyFormat(0 - fees.totalFees)}
+            <SummaryCell
+              align="right"
+              className={fees?.totalFees && 'stxl-red'}
+            >
+              {ccyFormat(0 - fees?.totalFees)}
             </SummaryCell>
           </TableRow>
           <TableRow>

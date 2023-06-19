@@ -16,6 +16,8 @@ import {
   optionChainModalState,
   optionChainRadioModal,
   optionChainState,
+  positionState,
+  positionSummaryState,
 } from '../../utils/state';
 import ConfirmOrderModal from '../Position/ConfirmOrderModal';
 
@@ -30,6 +32,8 @@ export const Item = styled(Paper)(({ theme }) => ({
 
 function MainPage() {
   const setOptionChain = useSetRecoilState(optionChainState);
+  const setPosition = useSetRecoilState(positionState);
+  const setPositionSummary = useSetRecoilState(positionSummaryState);
   const { open: openConfirmModal } = useRecoilValue(confirmOrderModal);
   const { open: openRadioModal } = useRecoilValue(optionChainRadioModal);
   const { open: openChainModal } = useRecoilValue(optionChainModalState);
@@ -41,8 +45,16 @@ function MainPage() {
         ...data,
       }));
     };
+    const positionUpdate = ({ position, summary }) => {
+      setPosition(position);
+      setPositionSummary(summary);
+    };
     socket.on('tick', tickUpdate);
-    return () => socket.off('tick', tickUpdate);
+    socket.on('position', positionUpdate);
+    return () => {
+      socket.off('tick', tickUpdate);
+      socket.off('position', tickUpdate);
+    };
   }, [setOptionChain]);
 
   const setOpen = useSetRecoilState(optionChainModalState);

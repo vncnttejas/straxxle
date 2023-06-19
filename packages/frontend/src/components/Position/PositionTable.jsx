@@ -26,7 +26,7 @@ import {
   inlineEditsState,
   optionChainRadioModal,
   posGridRowSelectionState,
-  positionSelector,
+  positionState,
 } from '../../utils/state';
 import Loading from '../Loading/Loading';
 import { set } from 'lodash';
@@ -141,7 +141,7 @@ function PositionTable() {
   const { enableOrder, enableDelete, enableClear } = useRecoilValue(
     actionDisplaySelector
   );
-  const setPosition = useSetRecoilState(positionSelector);
+  const setPosition = useSetRecoilState(positionState);
   const strikeWiseData = useRecoilValue(inlineEditIndicator);
   const setOpenModal = useSetRecoilState(optionChainRadioModal);
   const setCurrentEdit = useSetRecoilState(currentInlineEdit);

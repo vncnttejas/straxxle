@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const { produce } = require('immer');
 const { getTape } = require('./ticker-tape');
+const { appConstants: { lotSize } } = require('../config');
 
 const monthMap = {
   0: 'JAN',
@@ -72,7 +73,9 @@ const computeStrikeWisePnl = (positions) => produce(Object.values(positions), (d
     const pnl = posQty ? (lp - posAvg) * posQty : 0 - posVal;
     position.lp = lp;
     position.pnl = +pnl.toFixed(2);
-    position.posQty = posQty;
+    position.posQty = posQty / lotSize;
+    const curPosVal = posQty * (strike?.lp || 0);
+    position.exitFees = computeFees(curPosVal);
   });
 });
 
@@ -85,14 +88,26 @@ const computeSummary = (pnlPosition) => produce(pnlPosition, (draft) => {
   draft.forEach((cur) => {
     const accPnl = acc.pnl || 0;
     const accMtm = acc.mtm || 0;
+    // `pnl` only computed for CLOSED positions
     const pnl = cur.posQty ? accPnl : accPnl + cur.pnl;
+    // `mtm` only computed for OPEN positions
     const mtm = cur.posQty ? accMtm + cur.pnl : accMtm;
     const totalFees = cur.posFees.totalFees + (acc.fees?.totalFees || 0);
-    const total = pnl + mtm - totalFees;
+    const exitTotalFees = cur.exitFees.totalFees + (acc.exitFees?.exitTotalFees || 0);
     acc.pnl = pnl;
     acc.mtm = mtm;
-    acc.total = total;
+    acc.total = pnl + mtm - totalFees;
+    acc.exitTotal = pnl + mtm - totalFees - exitTotalFees;
     acc.orderCount = cur.posOrderList.length + (acc.orderCount || 0);
+    acc.exitFees = {
+      brokerage: cur.exitFees.brokerage + (acc.exitFees?.brokerage || 0),
+      stt: cur.exitFees.stt + (acc.exitFees?.stt || 0),
+      txnCharges: cur.exitFees.txnCharges + (acc.exitFees?.txnCharges || 0),
+      gst: cur.exitFees.gst + (acc.exitFees?.gst || 0),
+      sebi: cur.exitFees.sebi + (acc.exitFees?.sebi || 0),
+      stamp: cur.exitFees.stamp + (acc.exitFees?.stamp || 0),
+      exitTotalFees,
+    };
     acc.fees = {
       brokerage: cur.posFees.brokerage + (acc.fees?.brokerage || 0),
       stt: cur.posFees.stt + (acc.fees?.stt || 0),
@@ -103,7 +118,6 @@ const computeSummary = (pnlPosition) => produce(pnlPosition, (draft) => {
       totalFees,
     };
   });
-  // eslint-disable-next-line no-unused-expressions
   Object.keys(acc.fees).forEach((key) => {
     acc.fees[key] = +acc.fees[key].toFixed(2);
   });
@@ -125,6 +139,7 @@ const computeRawPosition = (orders) => {
     if (!finalPos[symbol]?.symbol) {
       const exp = new Date(expiryDate);
       _.set(finalPos, `${symbol}.symbol`, symbol);
+      finalPos[symbol].id = symbol;
       finalPos[symbol].posFees = fees;
       finalPos[symbol].strike = strike;
       finalPos[symbol].expiry = `${index} ${addSup(exp.getDate())} ${monthMap[exp.getMonth()]}`;
