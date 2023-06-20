@@ -62,6 +62,16 @@ const sortPositionList = (positions) => {
   return [...openPositions, ...closed];
 };
 
+const defaultExitFees = {
+  brokerage: 0,
+  stt: 0,
+  txnCharges: 0,
+  gst: 0,
+  sebi: 0,
+  stamp: 0,
+  totalFees: 0,
+};
+
 // Compute PnL for each position
 const computeStrikeWisePnl = (positions) => produce(Object.values(positions), (draft) => {
   draft.forEach((position) => {
@@ -74,8 +84,10 @@ const computeStrikeWisePnl = (positions) => produce(Object.values(positions), (d
     position.lp = lp;
     position.pnl = +pnl.toFixed(2);
     position.posQty = posQty / lotSize;
+    // The following line is required because when loading the app for the first time
+    // generally strike may be empty until it's fetched
     const curPosVal = posQty * (strike?.lp || 0);
-    position.exitFees = computeFees(curPosVal);
+    position.exitFees = posQty ? computeFees(curPosVal) : defaultExitFees;
   });
 });
 
@@ -88,17 +100,20 @@ const computeSummary = (pnlPosition) => produce(pnlPosition, (draft) => {
   draft.forEach((cur) => {
     const accPnl = acc.pnl || 0;
     const accMtm = acc.mtm || 0;
+    const isActive = cur.posQty !== 0;
     // `pnl` only computed for CLOSED positions
-    const pnl = cur.posQty ? accPnl : accPnl + cur.pnl;
+    const pnl = isActive ? accPnl : accPnl + cur.pnl;
     // `mtm` only computed for OPEN positions
-    const mtm = cur.posQty ? accMtm + cur.pnl : accMtm;
+    const mtm = isActive ? accMtm + cur.pnl : accMtm;
     const totalFees = cur.posFees.totalFees + (acc.fees?.totalFees || 0);
     const exitTotalFees = cur.exitFees.totalFees + (acc.exitFees?.exitTotalFees || 0);
+    const activeOrders = acc.activeOrderCount || 0;
     acc.pnl = pnl;
     acc.mtm = mtm;
     acc.total = pnl + mtm - totalFees;
     acc.exitTotal = pnl + mtm - totalFees - exitTotalFees;
     acc.orderCount = cur.posOrderList.length + (acc.orderCount || 0);
+    acc.activeOrderCount = isActive ? activeOrders + 1 : activeOrders;
     acc.exitFees = {
       brokerage: cur.exitFees.brokerage + (acc.exitFees?.brokerage || 0),
       stt: cur.exitFees.stt + (acc.exitFees?.stt || 0),
@@ -126,6 +141,7 @@ const computeSummary = (pnlPosition) => produce(pnlPosition, (draft) => {
 
 const computeRawPosition = (orders) => {
   const finalPos = {};
+  let reset = false;
   orders.forEach((order) => {
     const {
       symbol, strike, qty: orderQty, txnPrice, tt, index, expiryDate,
@@ -152,25 +168,24 @@ const computeRawPosition = (orders) => {
       const {
         posQty, posVal, posAvg, posFees,
       } = finalPos[symbol];
-      const cumQty = posQty + orderQty;
+      const cumOpenQty = posQty + orderQty;
       const cumVal = posVal + orderVal;
-
+      const cumOpenVal = reset ? orderVal : (finalPos[symbol].cumOpenVal || 0) + orderVal;
       // Compute the average of cost
       let cumAvg = 0;
       if (Math.sign(posVal) === Math.sign(orderVal)) {
-        cumAvg = cumVal / cumQty;
+        cumAvg = cumOpenVal / cumOpenQty;
       } else if (Math.abs(posQty) > Math.abs(orderQty)) {
         cumAvg = posAvg;
       } else if (Math.abs(posQty) < Math.abs(orderQty)) {
         cumAvg = txnPrice;
-      } else if (cumQty === 0) {
-        cumAvg = 0;
       }
 
       // Position information
-      finalPos[symbol].posQty = cumQty;
+      finalPos[symbol].posQty = cumOpenQty;
       finalPos[symbol].posAvg = cumAvg;
       finalPos[symbol].posVal = cumVal;
+      finalPos[symbol].cumOpenVal = cumOpenVal;
       finalPos[symbol].posOrderList.push(orderDetails);
 
       // Position fees
@@ -183,6 +198,7 @@ const computeRawPosition = (orders) => {
         stamp: posFees.stamp + fees.stamp,
         totalFees: posFees.totalFees + fees.totalFees,
       };
+      reset = !cumOpenQty;
     }
   });
   return finalPos;

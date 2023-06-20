@@ -1,7 +1,16 @@
 import {
-  Container, Grid, Typography, SpeedDial, SpeedDialIcon, Paper, styled,
+  Container,
+  Typography,
+  SpeedDial,
+  SpeedDialIcon,
+  Paper,
+  styled,
+  Alert,
+  Grid,
+  Snackbar,
+  Slide,
 } from '@mui/material';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
 import useSWR from 'swr';
 import { io } from 'socket.io-client';
 import { useEffect } from 'react';
@@ -13,6 +22,7 @@ import PositionTable from '../Position/PositionTable';
 import Summary from '../Position/Summary';
 import {
   confirmOrderModal,
+  newOrderSnackbarState,
   optionChainModalState,
   optionChainRadioModal,
   optionChainState,
@@ -30,6 +40,8 @@ export const Item = styled(Paper)(({ theme }) => ({
   color: theme.palette.text.secondary,
 }));
 
+const Transition = (props) => <Slide {...props} direction="up" />;
+
 function MainPage() {
   const setOptionChain = useSetRecoilState(optionChainState);
   const setPosition = useSetRecoilState(positionState);
@@ -37,6 +49,12 @@ function MainPage() {
   const { open: openConfirmModal } = useRecoilValue(confirmOrderModal);
   const { open: openRadioModal } = useRecoilValue(optionChainRadioModal);
   const { open: openChainModal } = useRecoilValue(optionChainModalState);
+
+  // Alert states
+  const orderSnackBar = useRecoilValue(newOrderSnackbarState);
+  const { open: snackOpen, severity, message } = orderSnackBar;
+  const resetOrderSnackbar = useResetRecoilState(newOrderSnackbarState);
+
   useSWR('/api/trigger-ticker-socket');
   useEffect(() => {
     const tickUpdate = (data) => {
@@ -92,6 +110,15 @@ function MainPage() {
         icon={<SpeedDialIcon />}
         onClick={() => setOpen((prev) => ({ ...prev, open: !prev.open }))}
       />
+      <Snackbar
+        open={snackOpen}
+        autoHideDuration={5 * 1000}
+        onClose={resetOrderSnackbar}
+        TransitionComponent={Transition}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+      >
+        <Alert severity={severity}>{message}</Alert>
+      </Snackbar>
     </Container>
   );
 }

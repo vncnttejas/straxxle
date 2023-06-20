@@ -10,6 +10,7 @@ module.exports = {
   host: process.env.NODE_HOST,
   app: {
     logger: {
+      file: './app.log',
       transport: {
         target: 'pino-pretty',
       },

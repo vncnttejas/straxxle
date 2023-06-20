@@ -4,7 +4,6 @@ import {
   TableContainer,
   TableBody,
   TableRow,
-  TableHead,
   TableCell,
   styled,
   Collapse,
@@ -15,7 +14,7 @@ import { openFeesCollapseState, positionSummaryState } from '../../utils/state';
 import { memo } from 'react';
 
 const ccyFormat = (num) => {
-  return num ? `₹ ${num.toFixed(2)}` : 0;
+  return num ? `₹ ${num.toFixed(1)}` : 0;
 };
 
 export const SummaryCell = styled(TableCell)(() => ({
@@ -68,25 +67,22 @@ const FeeBreakup = ({ fees }) => {
 const Summary = memo(function Summary() {
   const setCollapse = useSetRecoilState(openFeesCollapseState);
   const summaryData = useRecoilValue(positionSummaryState);
-  const { exitTotal, total, pnl, mtm, fees, orderCount, exitFees } =
-    summaryData;
+  const {
+    activeOrderCount,
+    exitTotal,
+    total,
+    pnl,
+    mtm,
+    fees,
+    orderCount,
+    exitFees,
+  } = summaryData;
   return (
     <TableContainer component={Paper} sx={{ mt: 2, height: 500 }}>
       <Table stickyHeader aria-label="sticky table">
         <TableBody>
           <TableRow>
-            <SummaryCell>Final (Exit Total)</SummaryCell>
-            <SummaryCell
-              align="right"
-              className={
-                total === 0 ? '' : total > 0 ? 'stxl-green' : 'stxl-red'
-              }
-            >
-              {ccyFormat(exitTotal)}
-            </SummaryCell>
-          </TableRow>
-          <TableRow>
-            <SummaryCell>Overall</SummaryCell>
+            <SummaryCell>EBIDTA</SummaryCell>
             <SummaryCell
               align="right"
               className={
@@ -94,6 +90,20 @@ const Summary = memo(function Summary() {
               }
             >
               {ccyFormat(total)}
+              {activeOrderCount > 0 && (
+                <span
+                  className={
+                    exitTotal === 0
+                      ? ''
+                      : exitTotal > 0
+                      ? 'stxl-green'
+                      : 'stxl-red'
+                  }
+                >
+                  {' '}
+                  ({ccyFormat(exitTotal)})
+                </span>
+              )}
             </SummaryCell>
           </TableRow>
           <TableRow>
@@ -116,11 +126,12 @@ const Summary = memo(function Summary() {
           </TableRow>
           <TableRow>
             <SummaryCell>Order Count</SummaryCell>
-            <SummaryCell align="right">{orderCount || 0}</SummaryCell>
-          </TableRow>
-          <TableRow>
-            <SummaryCell>Order Count</SummaryCell>
-            <SummaryCell align="right">{orderCount || 0}</SummaryCell>
+            <SummaryCell align="right">
+              {orderCount || 0}{' '}
+              {activeOrderCount > 0 && (
+                <span className="stxl-green">({activeOrderCount})</span>
+              )}
+            </SummaryCell>
           </TableRow>
           <TableRow>
             <SummaryCell>Exit Fees</SummaryCell>

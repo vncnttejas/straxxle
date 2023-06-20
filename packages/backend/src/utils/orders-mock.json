@@ -1,0 +1,146 @@
+[
+  {
+    "symbol": "NSE:NIFTY2362218500CE",
+    "strike": "18500CE",
+    "qty": -50,
+    "txnPrice": 277,
+    "tt": 1687161571,
+    "fees": {
+      "brokerage": 20,
+      "stt": 17.31,
+      "txnCharges": 6.92,
+      "gst": 6.72,
+      "sebi": 0.01,
+      "stamp": 0.42,
+      "totalFees": 51.38
+    }
+  },
+  {
+    "symbol": "NSE:NIFTY2362218500CE",
+    "strike": "18500CE",
+    "qty": 50,
+    "txnPrice": 264.6,
+    "tt": 1687161869,
+    "fees": {
+      "brokerage": 20,
+      "stt": 16.54,
+      "txnCharges": 6.62,
+      "gst": 6.58,
+      "sebi": 0.01,
+      "stamp": 0.4,
+      "totalFees": 50.14
+    }
+  },
+  {
+    "symbol": "NSE:NIFTY2362218500CE",
+    "strike": "18500CE",
+    "qty": 50,
+    "txnPrice": 265.6,
+    "tt": 1687161882,
+    "fees": {
+      "brokerage": 20,
+      "stt": 16.6,
+      "txnCharges": 6.64,
+      "gst": 6.59,
+      "sebi": 0.01,
+      "stamp": 0.4,
+      "totalFees": 50.24
+    }
+  },
+  {
+    "symbol": "NSE:NIFTY2362218500CE",
+    "strike": "18500CE",
+    "qty": -50,
+    "txnPrice": 271.14,
+    "tt": 1687161961,
+    "fees": {
+      "brokerage": 20,
+      "stt": 16.95,
+      "txnCharges": 6.78,
+      "gst": 6.65,
+      "sebi": 0.01,
+      "stamp": 0.41,
+      "totalFees": 50.8
+    }
+  },
+  {
+    "symbol": "NSE:NIFTY2362218500CE",
+    "strike": "18500CE",
+    "qty": 50,
+    "txnPrice": 269.6,
+    "tt": 1687161984,
+    "fees": {
+      "brokerage": 20,
+      "stt": 16.85,
+      "txnCharges": 6.74,
+      "gst": 6.63,
+      "sebi": 0.01,
+      "stamp": 0.4,
+      "totalFees": 50.64
+    }
+  },
+  {
+    "symbol": "NSE:NIFTY2362218500CE",
+    "strike": "18500CE",
+    "qty": -50,
+    "txnPrice": 273.1,
+    "tt": 1687162033,
+    "fees": {
+      "brokerage": 20,
+      "stt": 17.07,
+      "txnCharges": 6.83,
+      "gst": 6.67,
+      "sebi": 0.01,
+      "stamp": 0.41,
+      "totalFees": 50.99
+    }
+  },
+  {
+    "symbol": "NSE:NIFTY2362218500CE",
+    "strike": "18500CE",
+    "qty": -50,
+    "txnPrice": 278,
+    "tt": 1687162097,
+    "fees": {
+      "brokerage": 20,
+      "stt": 17.38,
+      "txnCharges": 6.95,
+      "gst": 6.73,
+      "sebi": 0.01,
+      "stamp": 0.42,
+      "totalFees": 51.48
+    }
+  },
+  {
+    "symbol": "NSE:NIFTY2362218500CE",
+    "strike": "18500CE",
+    "qty": 50,
+    "txnPrice": 278.39,
+    "tt": 1687162164,
+    "fees": {
+      "brokerage": 20,
+      "stt": 17.4,
+      "txnCharges": 6.96,
+      "gst": 6.73,
+      "sebi": 0.01,
+      "stamp": 0.42,
+      "totalFees": 51.52
+    }
+  },
+  {
+    "symbol": "NSE:NIFTY2362218500CE",
+    "strike": "18500CE",
+    "qty": -50,
+    "txnPrice": 275.5,
+    "tt": 1687162199,
+    "fees": {
+      "brokerage": 20,
+      "stt": 17.22,
+      "txnCharges": 6.89,
+      "gst": 6.7,
+      "sebi": 0.01,
+      "stamp": 0.41,
+      "totalFees": 51.23
+    }
+  }
+]
