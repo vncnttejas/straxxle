@@ -14,8 +14,6 @@ module.exports = {
       statements: 60,
     },
   },
-  globals: {
-    SUPPRESS_JEST_WARNINGS: true,
-  },
+  setupFiles: ['./jest.setup.js'],
   moduleDirectories: ['node_modules'],
 };

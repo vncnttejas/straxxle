@@ -1,5 +1,3 @@
-jest.useFakeTimers();
-
 const ordersMock = require('./orders-mock.json');
 const { computeRawPosition } = require('./position');
 
