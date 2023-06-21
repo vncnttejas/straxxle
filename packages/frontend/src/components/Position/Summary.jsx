@@ -82,7 +82,7 @@ const Summary = memo(function Summary() {
       <Table stickyHeader aria-label="sticky table">
         <TableBody>
           <TableRow>
-            <SummaryCell>EBIDTA</SummaryCell>
+            <SummaryCell>EBITDA</SummaryCell>
             <SummaryCell
               align="right"
               className={

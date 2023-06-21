@@ -18,7 +18,6 @@ const createApp = async (appConfig) => {
   app.register(fastifySwagger, {
     exposeRoute: true,
     routePrefix: '/docs',
-    mode: 'static',
     swagger: {
       info: { title: 'Straxxle' },
     },

@@ -1,7 +1,7 @@
 const fyersApiV2 = require('fyers-api-v2');
 const config = require('../config');
 const { upsertDataStore } = require('../utils/data-store');
-const { listenToUpdate } = require('../utils/symbol-utils');
+const { listenToUpdate } = require('../utils/ticker-tape');
 
 const handler = async (req, reply) => {
   const fyersToken = await fyersApiV2.generate_access_token({
