@@ -14,5 +14,8 @@ module.exports = {
       statements: 60,
     },
   },
+  globals: {
+    SUPPRESS_JEST_WARNINGS: true,
+  },
   moduleDirectories: ['node_modules'],
 };

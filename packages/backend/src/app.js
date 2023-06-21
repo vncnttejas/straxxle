@@ -6,7 +6,7 @@ const fastifyIO = require('fastify-socket.io');
 
 const { join } = require('path');
 
-async function createApp(appConfig) {
+const createApp = async (appConfig) => {
   const app = fastify(appConfig);
 
   app.register(fastifyCors, {
@@ -18,6 +18,7 @@ async function createApp(appConfig) {
   app.register(fastifySwagger, {
     exposeRoute: true,
     routePrefix: '/docs',
+    mode: 'static',
     swagger: {
       info: { title: 'Straxxle' },
     },
@@ -38,7 +39,7 @@ async function createApp(appConfig) {
   });
 
   return app;
-}
+};
 
 module.exports = {
   createApp,
