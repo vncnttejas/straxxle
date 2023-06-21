@@ -3,6 +3,7 @@ const { produce } = require('immer');
 const { set, throttle } = require('lodash');
 const { TickSnapshot } = require('../models/Tick');
 const { app } = require('../server');
+const { getSymbolData, currentStock } = require('./symbol-utils');
 
 let tape = {};
 const reqFields = [
@@ -49,7 +50,8 @@ const getTape = (cb) => {
   return cb ? cb(tape) : tape;
 };
 
-const fetchCurrent = async (symbol = 'NSE:NIFTY50-INDEX') => {
+const fetchCurrent = async (stock = currentStock) => {
+  const { symbol } = getSymbolData(stock);
   const quotes = new Quotes();
   const current = await quotes.setSymbol(symbol).getQuotes();
   return current.d[0].v.lp;

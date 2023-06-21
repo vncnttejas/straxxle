@@ -4,26 +4,62 @@ const { memoize } = require('lodash');
 const { setTape, fetchCurrent } = require('./ticker-tape');
 
 // eslint-disable-next-line prefer-regex-literals
-const regexp = '^NSE:(NIFTY|BANKNIFTY|FINNIFTY)([0-9]{2}[A-Z0-9]{3})([0-9]{3,6})([A-Z]{2})$';
-const optSymbolRegex = new RegExp(regexp);
+const symbolRegexp = '^NSE:(NIFTY|BANKNIFTY|FINNIFTY)([0-9]{2}[A-Z0-9]{3})([0-9]{3,6})([A-Z]{2})$';
+const optSymbolRegex = new RegExp(symbolRegexp);
 const currentExpiry = '23622';
+const currentStock = 'NIFTY';
 
-const fetchStrikeList = (atm, prefix = 'NSE:NIFTY', expiry = currentExpiry, strikeExtreme = 600) => {
+const getSymbolData = (symbol) => {
+  switch (symbol.toUpperCase()) {
+    case 'NIFTY': {
+      return {
+        prefix: 'NSE:NIFTY',
+        symbol: 'NSE:NIFTY50-INDEX',
+        strikeDiff: 50,
+        strikeExtreme: 600,
+      };
+    }
+    case 'FINNIFTY': {
+      return {
+        prefix: 'NSE:FINNIFTY',
+        symbol: 'NSE:FINNIFTY-INDEX',
+        strikeDiff: 50,
+        strikeExtreme: 600,
+      };
+    }
+    case 'BANKNIFTY': {
+      return {
+        prefix: 'NSE:BANKNIFTY',
+        symbol: 'NSE:NIFTYBANK-INDEX',
+        strikeDiff: 100,
+        strikeExtreme: 1200,
+      };
+    }
+    default: {
+      return {
+        prefix: 'NSE:NIFTY',
+        symbol: 'NSE:NIFTY50-INDEX',
+        strikeDiff: 50,
+        strikeExtreme: 600,
+      };
+    }
+  }
+};
+
+const fetchStrikeList = (atm, stock = currentStock, expiry = currentExpiry) => {
   // https://community.fyers.in/post/symbol-format-6120f9828c095908c6387654
-  const fetchStrikeDiff = 50;
+  const { prefix, strikeDiff, strikeExtreme } = getSymbolData(stock);
   const contractTypes = ['CE', 'PE'];
   const firstStrike = atm - strikeExtreme;
   const lastStrike = atm + strikeExtreme;
   const strikes = [];
-  for (let i = firstStrike; i <= lastStrike; i += fetchStrikeDiff) {
+  for (let i = firstStrike; i <= lastStrike; i += strikeDiff) {
     for (const contractType of contractTypes) {
       strikes.push(`${prefix}${expiry}${i}${contractType}`);
     }
   }
   return strikes;
 };
-
-const getPrefixFromSymbol = (symbol) => symbol === 'NIFTY' || 'NSE:NIFTY';
 
 const getATMStrikeNumfromCur = (num) => {
   const strikeDiff = 50;
@@ -122,15 +158,15 @@ const listenToUpdate = async (cred) => {
   fyersApiV2.setAppId(cred.appId);
   fyersApiV2.setRedirectUrl(cred.redirect_uri);
   fyersApiV2.setAccessToken(cred.access_token);
-  const current = await fetchCurrent();
+
+  const current = await fetchCurrent(currentStock);
   const atm = getATMStrikeNumfromCur(current);
   const strikes = fetchStrikeList(atm);
-  const reqBody = {
+  fyersApiV2.fyers_connect({
     symbol: strikes,
     dataType: 'symbolUpdate',
     token: cred.secret_key,
-  };
-  fyersApiV2.fyers_connect(reqBody, async (data) => {
+  }, async (data) => {
     const tickUpdate = JSON.parse(data);
     if (tickUpdate.d?.['7208']?.length) {
       const tick = tickUpdate.d['7208'][0].v;
@@ -141,11 +177,13 @@ const listenToUpdate = async (cred) => {
 };
 
 module.exports = {
-  regexp,
+  symbolRegexp,
   optSymbolRegex,
+  currentStock,
+  currentExpiry,
   listenToUpdate,
   computeStrikeType,
   fetchStrikeList,
   getATMStrikeNumfromCur,
-  getPrefixFromSymbol,
+  getSymbolData,
 };

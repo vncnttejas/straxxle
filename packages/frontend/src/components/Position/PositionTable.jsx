@@ -202,7 +202,7 @@ function PositionTable() {
       {
         field: 'expiry',
         headerName: 'Expiry',
-        width: 140,
+        width: 200,
       },
       {
         field: 'strike',

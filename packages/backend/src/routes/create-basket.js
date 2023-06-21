@@ -4,7 +4,7 @@ const {
 const { Baskets } = require('../models/Baskets');
 const { Tags } = require('../models/Tags');
 const { getTape } = require('../utils/ticker-tape');
-const { regexp } = require('../utils/symbol-utils');
+const { symbolRegexp } = require('../utils/symbol-utils');
 
 const handler = async (req) => {
   // Get all tags from basket and orders and flatten them
@@ -68,7 +68,7 @@ module.exports = {
             properties: {
               symbol: {
                 type: 'string',
-                pattern: regexp,
+                pattern: symbolRegexp,
               },
               qty: {
                 type: 'number',
