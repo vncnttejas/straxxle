@@ -1,7 +1,6 @@
 import { useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
 import { Box, Button } from '@mui/material';
 import axios from 'axios';
-import { mutate } from 'swr';
 import { useCallback } from 'react';
 import {
   appConstants,
@@ -29,7 +28,6 @@ function NewEntry() {
         severity: 'success',
       });
       resetSelectedStrikes();
-      mutate('/api/position');
     } catch (e) {
       const message = `Order creation failed: ${e.message}`;
       setNewOrderSnackbar({ open: true, message, severity: 'error' });

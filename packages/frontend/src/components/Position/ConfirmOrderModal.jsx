@@ -36,7 +36,6 @@ function ConfirmOrderModal() {
       });
       resetInlineEdits();
       setRowSelection([]);
-      mutate('/api/position');
       setModalOpen({ open: false, symbols: [] });
     } catch (e) {
       const message = `Order creation failed: ${e.message}`;

@@ -12,8 +12,6 @@ import {
 } from '@mui/material';
 import { useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
 import useSWR from 'swr';
-import { io } from 'socket.io-client';
-import { useEffect } from 'react';
 import {
   OptionChainModalFull,
   OptionChainRadioModal,
@@ -25,13 +23,8 @@ import {
   newOrderSnackbarState,
   optionChainModalState,
   optionChainRadioModal,
-  optionChainState,
-  positionState,
-  positionSummaryState,
 } from '../../utils/state';
 import ConfirmOrderModal from '../Position/ConfirmOrderModal';
-
-const socket = io('http://developer.vbox');
 
 export const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
@@ -43,9 +36,9 @@ export const Item = styled(Paper)(({ theme }) => ({
 const Transition = (props) => <Slide {...props} direction="up" />;
 
 function MainPage() {
-  const setOptionChain = useSetRecoilState(optionChainState);
-  const setPosition = useSetRecoilState(positionState);
-  const setPositionSummary = useSetRecoilState(positionSummaryState);
+  useSWR('/api/trigger-ticker-socket');
+  useSWR('/api/trigger-position-socket');
+
   const { open: openConfirmModal } = useRecoilValue(confirmOrderModal);
   const { open: openRadioModal } = useRecoilValue(optionChainRadioModal);
   const { open: openChainModal } = useRecoilValue(optionChainModalState);
@@ -54,26 +47,6 @@ function MainPage() {
   const orderSnackBar = useRecoilValue(newOrderSnackbarState);
   const { open: snackOpen, severity, message } = orderSnackBar;
   const resetOrderSnackbar = useResetRecoilState(newOrderSnackbarState);
-
-  useSWR('/api/trigger-ticker-socket');
-  useEffect(() => {
-    const tickUpdate = (data) => {
-      setOptionChain((oc) => ({
-        ...oc,
-        ...data,
-      }));
-    };
-    const positionUpdate = ({ position, summary }) => {
-      setPosition(position);
-      setPositionSummary(summary);
-    };
-    socket.on('tick', tickUpdate);
-    socket.on('position', positionUpdate);
-    return () => {
-      socket.off('tick', tickUpdate);
-      socket.off('position', tickUpdate);
-    };
-  }, [setOptionChain]);
 
   const setOpen = useSetRecoilState(optionChainModalState);
 
@@ -91,13 +64,6 @@ function MainPage() {
               Summary
             </Typography>
             <Summary />
-          </Item>
-        </Grid>
-        <Grid item md={8} xs={12}>
-          <Item>
-            <Typography variant="h5" mb={2}>
-              Baskets
-            </Typography>
           </Item>
         </Grid>
       </Grid>

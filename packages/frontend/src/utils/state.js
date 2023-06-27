@@ -2,7 +2,7 @@ import {
   DefaultValue, atom, atomFamily, selector, selectorFamily,
 } from 'recoil';
 import { produce } from 'immer';
-import { intersection, set as setObject } from 'lodash';
+import { filter, intersection, keyBy, keys, map, set as setObject } from 'lodash';
 
 export const appConstants = atom({
   key: 'appConstants',
@@ -12,15 +12,35 @@ export const appConstants = atom({
   },
 });
 
-export const optionChainState = atom({
-  key: 'optionChainState',
+export const tapeState = atom({
+  key: 'tapeState',
   default: {},
+});
+
+export const optionChainSelector = selector({
+  key: 'optionChainSelector',
+  get: ({ get }) => {
+    const tape = get(tapeState);
+    const optionStrikes = filter(Object.values(tape), 'isOption');
+    return keyBy(optionStrikes, 'symbol');
+  },
+  set: ({ get, set }) => {
+    const tape = get(tapeState);
+    const optionStrikes = filter(Object.values(tape), 'isOption');
+    const optionStrikeKeys = map(optionStrikes, 'symbol');
+    const newTape = produce(tape, (draft) => {
+      optionStrikeKeys.forEach((strike) => {
+        delete draft[strike];
+      });
+    });
+    set(tapeState, newTape);
+  },
 });
 
 export const optionChainPriceSelector = selectorFamily({
   key: 'optionChainPriceSelector',
   get: (symbol) => ({ get }) => {
-    const optionChain = get(optionChainState);
+    const optionChain = get(optionChainSelector);
     return optionChain[symbol]?.lp || 0;
   },
 });
@@ -28,7 +48,7 @@ export const optionChainPriceSelector = selectorFamily({
 export const optionChainStrikeSelector = selectorFamily({
   key: 'optionChainStrikeSelector',
   get: (symbol) => ({ get }) => {
-    const optionChain = get(optionChainState);
+    const optionChain = get(optionChainSelector);
     return optionChain[symbol]?.strike;
   },
 });
@@ -36,7 +56,7 @@ export const optionChainStrikeSelector = selectorFamily({
 export const optionChainListSelector = selector({
   key: 'optionChainListSelector',
   get: ({ get }) => {
-    const optionChain = get(optionChainState);
+    const optionChain = get(optionChainSelector);
     return Object.values(optionChain);
   },
 });
@@ -160,7 +180,7 @@ export const selectedStrikesSelector = selector({
 export const trimmedOptionFields = selector({
   key: 'trimmedOptionFields',
   get: ({ get }) => {
-    const optionChain = get(optionChainState);
+    const optionChain = get(optionChainSelector);
     return produce(optionChain, (draft) => {
       for (const option in draft) {
         const optionData = draft[option];

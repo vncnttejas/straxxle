@@ -1,43 +1,26 @@
+const { getStoreData } = require('./data-store');
+
+const symbolRegexp = '^NSE:(NIFTY|BANKNIFTY|FINNIFTY)([0-9]{2}[A-Z0-9]{3})([0-9]{3,6})([A-Z]{2})$';
+const optSymbolRegex = new RegExp(symbolRegexp);
+
 const getSymbolData = (symbol) => {
-  switch (symbol.toUpperCase()) {
-    case 'NIFTY': {
-      return {
-        prefix: 'NSE:NIFTY',
-        symbol: 'NSE:NIFTY50-INDEX',
-        strikeDiff: 50,
-        strikeExtreme: 600,
-      };
-    }
-    case 'FINNIFTY': {
-      return {
-        prefix: 'NSE:FINNIFTY',
-        symbol: 'NSE:FINNIFTY-INDEX',
-        strikeDiff: 50,
-        strikeExtreme: 600,
-      };
-    }
-    case 'BANKNIFTY': {
-      return {
-        prefix: 'NSE:BANKNIFTY',
-        symbol: 'NSE:NIFTYBANK-INDEX',
-        strikeDiff: 100,
-        strikeExtreme: 1200,
-      };
-    }
-    default: {
-      return {
-        prefix: 'NSE:NIFTY',
-        symbol: 'NSE:NIFTY50-INDEX',
-        strikeDiff: 50,
-        strikeExtreme: 600,
-      };
-    }
+  const savedSymbols = getStoreData('defaultSymbols');
+  if (savedSymbols) {
+    return savedSymbols[symbol];
   }
+  throw new Error(`Invalid symbol provided: ${symbol}`);
 };
 
 const getATMStrikeNumfromCur = (num) => {
   const strikeDiff = 50;
   return Math.round(num / strikeDiff) * strikeDiff;
+};
+
+const processSymbol = (symbol) => {
+  const [_, index, rawExpiry, strikeNum, contractType] = optSymbolRegex.exec(symbol);
+  return {
+    index, rawExpiry, strikeNum, contractType,
+  };
 };
 
 const computeStrikeType = (strikeNum, current, contractType) => {
@@ -50,7 +33,25 @@ const computeStrikeType = (strikeNum, current, contractType) => {
   return 'atm';
 };
 
+const prepareSymbolList = (atm, stock, expiry) => {
+  const { prefix, strikeDiff, strikeExtreme } = getSymbolData(stock);
+  const contractTypes = ['CE', 'PE'];
+  const firstStrike = atm - strikeExtreme;
+  const lastStrike = atm + strikeExtreme;
+  const strikes = [];
+  for (let i = firstStrike; i <= lastStrike; i += strikeDiff) {
+    for (const contractType of contractTypes) {
+      strikes.push(`${prefix}${expiry}${i}${contractType}`);
+    }
+  }
+  return strikes;
+};
+
 module.exports = {
+  symbolRegexp,
+  optSymbolRegex,
+  prepareSymbolList,
+  processSymbol,
   computeStrikeType,
   getATMStrikeNumfromCur,
   getSymbolData,

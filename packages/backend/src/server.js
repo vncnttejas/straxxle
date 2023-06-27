@@ -20,8 +20,4 @@ const start = async (serverConfig) => {
   return app;
 };
 
-const app = start(config);
-
-module.exports = {
-  app,
-};
+start(config);

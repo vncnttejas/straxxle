@@ -9,12 +9,37 @@ import { useRecoilValue } from 'recoil';
 import './OptionChain.css';
 import { optionChainStrikesSelector } from '../../utils/state';
 import { OptionChainRow, StrikeCell } from './OptionChainRow';
+import ContractSelect from './ContractSelect';
+// import useOptionChain from './useOptionChain';
+import { tapeState } from '../../utils/state';
+import { io } from 'socket.io-client';
+import { useEffect } from 'react';
+import { useSetRecoilState } from 'recoil';
+
+const socket = io('http://developer.vbox');
 
 const OptionChainGrid = () => {
+  const setTape = useSetRecoilState(tapeState);
+  useEffect(() => {
+    const tickUpdate = (data) => {
+      setTape((oc) => {
+        return {
+          ...oc,
+          ...data,
+        };
+      });
+    };
+    socket.on('tick', tickUpdate);
+    return () => {
+      socket.off('tick', tickUpdate);
+    };
+  }, [setTape]);
   const optionChainStrikes = useRecoilValue(optionChainStrikesSelector);
   const optionChain = Object.entries(optionChainStrikes);
+
   return (
     <Paper sx={{ width: '100%', minHeight: 400 }}>
+      <ContractSelect />
       <TableContainer>
         <Table aria-label="sticky table">
           <TableHead>

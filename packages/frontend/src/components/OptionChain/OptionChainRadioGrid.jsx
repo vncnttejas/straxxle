@@ -10,6 +10,8 @@ import { useRecoilValue } from 'recoil';
 import './OptionChain.css';
 import { optionChainStrikesSelector } from '../../utils/state';
 import { OptionChainRadioRow } from './OptionChainRow';
+import ContractSelect from './ContractSelect';
+import useOptionChain from './useOptionChain';
 
 export const StrikeCell = styled(TableCell)(() => ({
   paddingTop: 2,
@@ -17,9 +19,11 @@ export const StrikeCell = styled(TableCell)(() => ({
 }));
 
 const OptionChainRadioGrid = () => {
+  useOptionChain();
   const optionChainStrikes = useRecoilValue(optionChainStrikesSelector);
   return (
     <Paper sx={{ width: '100%', minHeight: 400 }}>
+      <ContractSelect />
       <TableContainer>
         <Table aria-label="sticky table">
           <TableHead>

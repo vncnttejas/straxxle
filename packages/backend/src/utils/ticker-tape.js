@@ -1,81 +1,26 @@
 const fyersApiV2 = require('fyers-api-v2');
-const { memoize } = require('lodash');
-const { quotes: Quotes } = require('fyers-api-v2');
+const {
+  memoize, chunk, flatten, xor,
+} = require('lodash');
 const { produce } = require('immer');
-const { set, throttle } = require('lodash');
-const { TickSnapshot } = require('../models/Tick');
-const { app } = require('../server');
-const { getSymbolData, getATMStrikeNumfromCur, computeStrikeType } = require('./symbol-utils');
+const { set } = require('lodash');
+const {
+  getSymbolData, computeStrikeType, processSymbol, getATMStrikeNumfromCur,
+} = require('./symbol-utils');
+const { getStoreData } = require('./data-store');
+const { getApp } = require('../app');
 
-const currentExpiry = '23622';
-const currentStock = 'NIFTY';
-const symbolRegexp = '^NSE:(NIFTY|BANKNIFTY|FINNIFTY)([0-9]{2}[A-Z0-9]{3})([0-9]{3,6})([A-Z]{2})$';
-const optSymbolRegex = new RegExp(symbolRegexp);
+const { quotes: Quotes } = fyersApiV2;
 
-let tape = {};
+const app = getApp();
+
 const reqFields = [
   'symbol', 'index', 'strike', 'strikeNum', 'strikeType',
   'contractType', 'expiryType', 'expiryDate', 'lp', 'short_name',
 ];
+let tape = {};
 let subTape = {};
-const bkpArray = [];
-const maxSize = 5;
 let prevSnapshot = {};
-
-const backupTapeSnapshot = async (snapshot) => {
-  const response = await TickSnapshot.create({ snapshot });
-  const insertId = response._id.toString();
-  bkpArray.push(insertId);
-  (await app).log.info({ insertId }, 'Inserting snapshot');
-  if (bkpArray.length > maxSize) {
-    const firstInsertId = bkpArray.shift();
-    const logObj = { recordToRemove: firstInsertId, bkpArrayLength: bkpArray.length };
-    (await app).log.info(logObj, 'Removing snapshot');
-    await TickSnapshot.findByIdAndRemove(firstInsertId);
-  }
-};
-
-const throttledSnapshotBkp = throttle(backupTapeSnapshot, 5000);
-
-const setTape = (newTick) => {
-  const symbol = Object.keys(newTick)[0];
-  tape = produce(tape, (draft) => {
-    draft[symbol] = newTick[symbol];
-  });
-  subTape = produce(subTape, (draft) => {
-    reqFields.forEach((field) => {
-      set(draft, `${symbol}.${field}`, newTick[symbol][field]);
-    });
-  });
-  throttledSnapshotBkp(tape);
-};
-
-const getTape = (cb) => {
-  if (cb && typeof cb !== 'function') {
-    throw new Error('Expects empty param or a callback as param');
-  }
-  return cb ? cb(tape) : tape;
-};
-
-const fetchCurrent = async (stock = currentStock) => {
-  const { symbol } = getSymbolData(stock);
-  const quotes = new Quotes();
-  const current = await quotes.setSymbol(symbol).getQuotes();
-  return current.d[0].v.lp;
-};
-
-const processSymbol = (symbol) => {
-  const [_, index, rawExpiry, strikeNum, contractType] = optSymbolRegex.exec(symbol);
-  return {
-    index, rawExpiry, strikeNum, contractType,
-  };
-};
-
-const getLastThursdayOfMonth = (year, month) => {
-  const lastDay = new Date(year, month + 1, 0);
-  const lastThursday = new Date(year, month, lastDay.getDate() - lastDay.getDay() + 4);
-  return lastThursday.getDate();
-};
 
 const monthMap = {
   JAN: 0,
@@ -98,9 +43,16 @@ const singleDigitMonthMap = {
   D: 12,
 };
 
+const getLastThursdayOfMonth = (year, month) => {
+  const lastDay = new Date(year, month + 1, 0);
+  const lastThursday = new Date(year, month, lastDay.getDate() - lastDay.getDay() + 4);
+  return lastThursday.getDate();
+};
+
 const processExpiry = memoize((rawExpiry) => {
   const match = /^([0-9]{2})([a-z0-9])([0-9]{2})$/i.exec(rawExpiry);
-  if (match[0]) {
+  if (match?.[0]) {
+    // eslint-disable-next-line no-unused-vars
     const [_, year, month, day] = match;
     const monthNum = singleDigitMonthMap[month.toUpperCase()] || parseInt(month - 1, 10);
     return {
@@ -115,67 +67,103 @@ const processExpiry = memoize((rawExpiry) => {
   };
 });
 
-const processTick = (tick, atm, current) => {
+const enrichStrikeData = (tick) => {
   const { symbol } = tick;
   const {
     index, rawExpiry, strikeNum, contractType,
   } = processSymbol(symbol);
+  const currentUnderlying = getStoreData(`defaultSymbols.${index}`).symbol;
+  const currentValue = tape[currentUnderlying].lp;
+  const atm = getATMStrikeNumfromCur(currentValue);
   const { expiryType, expiryDate } = processExpiry(rawExpiry);
   const strikeDiffPts = contractType === 'PE' ? atm - strikeNum : strikeNum - atm;
-  const strikeType = computeStrikeType(strikeNum, current, contractType);
+  const strikeType = computeStrikeType(strikeNum, currentValue, contractType);
   const strikeDiff = strikeDiffPts / 50;
   const strike = `${strikeNum}${contractType}`;
   return {
-    [symbol]: {
-      index,
-      rawExpiry,
-      strike,
-      strikeNum,
-      strikeDiffPts,
-      strikeDiff,
-      strikeType,
-      contractType,
-      expiryType,
-      expiryDate,
-      ...tick,
-    },
+    index,
+    rawExpiry,
+    strike,
+    strikeNum,
+    strikeDiffPts,
+    strikeDiff,
+    strikeType,
+    contractType,
+    expiryType,
+    expiryDate,
+    ...tick,
   };
 };
 
-const fetchStrikeList = (atm, stock = currentStock, expiry = currentExpiry) => {
-  // https://community.fyers.in/post/symbol-format-6120f9828c095908c6387654
-  const { prefix, strikeDiff, strikeExtreme } = getSymbolData(stock);
-  const contractTypes = ['CE', 'PE'];
-  const firstStrike = atm - strikeExtreme;
-  const lastStrike = atm + strikeExtreme;
-  const strikes = [];
-  for (let i = firstStrike; i <= lastStrike; i += strikeDiff) {
-    for (const contractType of contractTypes) {
-      strikes.push(`${prefix}${expiry}${i}${contractType}`);
-    }
+const setTape = (newTick) => {
+  const isOption = !!newTick.LTQ;
+  const { symbol } = newTick;
+  let data = newTick;
+  if (isOption) {
+    data = enrichStrikeData(newTick);
   }
-  return strikes;
+  tape = produce(tape, (draft) => {
+    set(draft, symbol, data);
+    set(draft, `${symbol}.isOption`, isOption);
+  });
+  subTape = produce(subTape, (draft) => {
+    set(draft, `${symbol}.isOption`, isOption);
+    reqFields.forEach((field) => {
+      set(draft, `${symbol}.${field}`, data[field]);
+    });
+  });
 };
 
-const listenToUpdate = async (cred) => {
-  fyersApiV2.setAppId(cred.appId);
-  fyersApiV2.setRedirectUrl(cred.redirect_uri);
-  fyersApiV2.setAccessToken(cred.access_token);
+const getTape = (cb) => {
+  if (cb && typeof cb !== 'function') {
+    throw new Error('Expects empty param or a callback as param');
+  }
+  return cb ? cb(tape) : tape;
+};
 
-  const current = await fetchCurrent(currentStock);
-  const atm = getATMStrikeNumfromCur(current);
-  const strikes = fetchStrikeList(atm);
-  fyersApiV2.fyers_connect({
-    symbol: strikes,
-    dataType: 'symbolUpdate',
-    token: cred.secret_key,
-  }, async (data) => {
-    const tickUpdate = JSON.parse(data);
-    if (tickUpdate.d?.['7208']?.length) {
-      const tick = tickUpdate.d['7208'][0].v;
-      const processedTick = processTick(tick, atm, current);
-      setTape(processedTick);
-    }
+const fetchCurrent = async (stock) => {
+  const { symbol } = getSymbolData(stock);
+  const quotes = new Quotes();
+  const current = await quotes.setSymbol(symbol).getQuotes();
+  return current.d[0].v.lp;
+};
+
+const flattenWatchList = (watchList) => flatten(Object.values(watchList));
+
+const maxWatchItems = 50;
+const triggerListen = () => {
+  let watchListSymbols = flattenWatchList(getStoreData('watchList'));
+  app.log.info(watchListSymbols, 'Listening for symbol updates');
+  const chunkedWatchLists = chunk(watchListSymbols, maxWatchItems);
+  const token = getStoreData('fyersCred.secret_key');
+  chunkedWatchLists.forEach((watchListChunk) => {
+    const request = {
+      symbol: watchListChunk,
+      dataType: 'symbolUpdate',
+      token,
+    };
+    fyersApiV2.fyers_connect(request, (data) => {
+      const tickUpdate = JSON.parse(data);
+      if (tickUpdate.d?.['7208']?.length) {
+        setTape(tickUpdate.d['7208'][0].v);
+      }
+      const newWatchList = flattenWatchList(getStoreData('watchList'));
+      const diff = xor(newWatchList, watchListSymbols);
+      if (diff.length) {
+        app.log.info(diff, 'Watchlist updated');
+        watchListSymbols = newWatchList;
+        setTimeout(() => {
+          fyersApiV2.fyers_unsuscribe({
+            symbol: watchListSymbols,
+            dataType: 'symbolUpdate',
+            token,
+          });
+        }, 1000);
+        setTimeout(() => {
+          triggerListen();
+        }, 1100);
+      }
+    });
   });
 };
 
@@ -183,10 +171,14 @@ const getTapeDiff = (getAll = false) => {
   if (getAll) {
     return subTape;
   }
+  const { optionChainSymbols } = getStoreData('watchList');
+  if (!optionChainSymbols?.length) {
+    return [];
+  }
   const diff = {};
-  Object.values(subTape).forEach((strikeData) => {
-    if (subTape[strikeData] !== prevSnapshot[strikeData]) {
-      diff[strikeData] = subTape[strikeData];
+  Object.keys(subTape).forEach((symbol) => {
+    if (optionChainSymbols.includes(symbol) && subTape[symbol] !== prevSnapshot[symbol]) {
+      diff[symbol] = subTape[symbol];
     }
   });
   prevSnapshot = { ...subTape };
@@ -198,5 +190,6 @@ module.exports = {
   setTape,
   fetchCurrent,
   getTapeDiff,
-  listenToUpdate,
+  enrichStrikeData,
+  triggerListen,
 };

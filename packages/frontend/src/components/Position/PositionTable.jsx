@@ -5,13 +5,10 @@ import {
   useGridApiContext,
 } from '@mui/x-data-grid';
 import useSWR from 'swr';
+import { io } from 'socket.io-client';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import {
-  Suspense, useCallback, useEffect, useMemo,
-} from 'react';
-import {
-  Button, TextField, Tooltip, Typography, styled,
-} from '@mui/material';
+import { Suspense, useCallback, useEffect, useMemo } from 'react';
+import { Button, TextField, Tooltip, Typography, styled } from '@mui/material';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
@@ -27,6 +24,7 @@ import {
   optionChainRadioModal,
   posGridRowSelectionState,
   positionState,
+  positionSummaryState,
 } from '../../utils/state';
 import Loading from '../Loading/Loading';
 import { set } from 'lodash';
@@ -48,6 +46,8 @@ const PositionGrid = styled(DataGrid)(() => ({
     color: '#ff0000',
   },
 }));
+
+const socket = io('http://developer.vbox');
 
 function CustomQtyField({ id, value, row }) {
   const setVal = useSetRecoilState(inlineEditsSelector(id));
@@ -134,14 +134,24 @@ function CustomQtyEditField({ id, value, field }) {
 }
 
 function PositionTable() {
-  const { data: positionData } = useSWR('/api/position');
+  const setPositionSummary = useSetRecoilState(positionSummaryState);
+  const setPosition = useSetRecoilState(positionState);
+  useEffect(() => {
+    const positionUpdate = ({ position, summary }) => {
+      setPosition(position);
+      setPositionSummary(summary);
+    };
+    socket.on('position', positionUpdate);
+    return () => {
+      socket.off('position', positionUpdate);
+    };
+  }, [setPosition, setPositionSummary]);
   const [rowSelectionModel, setRowSelectionModel] = useRecoilState(
     posGridRowSelectionState
   );
   const { enableOrder, enableDelete, enableClear } = useRecoilValue(
     actionDisplaySelector
   );
-  const setPosition = useSetRecoilState(positionState);
   const strikeWiseData = useRecoilValue(inlineEditIndicator);
   const setOpenModal = useSetRecoilState(optionChainRadioModal);
   const setCurrentEdit = useSetRecoilState(currentInlineEdit);
@@ -185,10 +195,6 @@ function PositionTable() {
     },
     [setConfirmModal, setSelection]
   );
-
-  useEffect(() => {
-    setPosition(positionData.position);
-  }, [positionData, setPosition]);
 
   const handleRowSelection = useCallback(
     (newSelection) => {

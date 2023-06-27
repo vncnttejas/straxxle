@@ -1,7 +1,7 @@
 const fyersApiV2 = require('fyers-api-v2');
 const config = require('../config');
-const { upsertDataStore } = require('../utils/data-store');
-const { listenToUpdate } = require('../utils/ticker-tape');
+const { setDataStore, getStoreData } = require('../utils/data-store');
+const { triggerListen } = require('../utils/ticker-tape');
 
 const handler = async (req, reply) => {
   const fyersToken = await fyersApiV2.generate_access_token({
@@ -15,8 +15,14 @@ const handler = async (req, reply) => {
     secret_key: config.fyersCred.secretId,
     redirect_uri: config.fyersCred.redirectUri,
   };
-  await listenToUpdate(fyersCred);
-  upsertDataStore({ accessToken: fyersToken.access_token });
+  fyersApiV2.setAppId(fyersCred.appId);
+  fyersApiV2.setRedirectUrl(fyersCred.redirect_uri);
+  fyersApiV2.setAccessToken(fyersCred.access_token);
+  setDataStore('fyersCred', fyersCred);
+  // Listen to default symbols
+  const defaultWatchSymbols = Object.values(getStoreData('defaultSymbols')).map(({ symbol }) => (symbol));
+  setDataStore('watchList.defaultWatchSymbols', defaultWatchSymbols);
+  triggerListen();
   reply.redirect(config.fyersCred.frontendRedirect);
 };
 

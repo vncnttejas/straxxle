@@ -3,7 +3,7 @@ const { Forbidden } = require('http-errors');
 const { getStoreData } = require('../utils/data-store');
 
 const handler = async () => {
-  const accessToken = getStoreData('accessToken');
+  const accessToken = getStoreData('fyersCred.access_token');
   if (accessToken) {
     return {
       accessToken,

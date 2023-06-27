@@ -6,8 +6,10 @@ const fastifyIO = require('fastify-socket.io');
 
 const { join } = require('path');
 
+let app;
+
 const createApp = async (appConfig) => {
-  const app = fastify(appConfig);
+  app = fastify(appConfig);
 
   app.register(fastifyCors, {
     origin: '*',
@@ -40,6 +42,9 @@ const createApp = async (appConfig) => {
   return app;
 };
 
+const getApp = () => app;
+
 module.exports = {
   createApp,
+  getApp,
 };

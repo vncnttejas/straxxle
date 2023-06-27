@@ -24,14 +24,12 @@ export const OptionChainModalFull = () => {
       open={modalOpen.open}
       onClose={() => setModalOpen((param) => ({ ...param, open: false }))}
       variant="permanent"
-      maxWidth="xl"
+      maxWidth="lg"
       fullWidth={true}
     >
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12}>
           <OptionChainGrid />
-        </Grid>
-        <Grid item xs={12} md={6}>
           <NewEntry />
         </Grid>
       </Grid>
