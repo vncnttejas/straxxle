@@ -10,7 +10,6 @@ import './OptionChain.css';
 import { optionChainStrikesSelector } from '../../utils/state';
 import { OptionChainRow, StrikeCell } from './OptionChainRow';
 import ContractSelect from './ContractSelect';
-// import useOptionChain from './useOptionChain';
 import { tapeState } from '../../utils/state';
 import { io } from 'socket.io-client';
 import { useEffect } from 'react';

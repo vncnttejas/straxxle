@@ -1,16 +1,23 @@
-const { setDataStore, getStoreData } = require('../utils/data-store');
-const { prepareSymbolList, getATMStrikeNumfromCur } = require('../utils/symbol-utils');
-const { getTape } = require('../utils/ticker-tape');
+const { setStoreData, unsetDataStore } = require('../utils/data-store');
 
 const handler = async (req) => {
-  const { expiry, symbol } = req.body;
-  const symbolObj = getStoreData(`defaultSymbols.${symbol}`);
-  const stockData = getTape((tape) => tape[symbolObj.symbol]);
-  const atm = getATMStrikeNumfromCur(stockData.lp);
-  const optionChainSymbols = prepareSymbolList(atm, symbol, expiry);
-  setDataStore('watchList.optionChainSymbols', optionChainSymbols);
+  const { symbol, reset } = req.body;
+
+  if (reset) {
+    unsetDataStore('ocContext');
+    setStoreData('getAll', true);
+    setStoreData('streamLive', false);
+    return {
+      success: true,
+      message: 'unsubscribed from option chain watch',
+    };
+  }
+  setStoreData('ocContext', symbol);
+  setStoreData('getAll', true);
+  setStoreData('streamLive', true);
   return {
     success: true,
+    message: 'set the option chain context successfully',
   };
 };
 
@@ -22,13 +29,13 @@ module.exports = {
     body: {
       type: 'object',
       properties: {
-        expiry: {
-          type: 'string',
-          minLength: 1,
-        },
         symbol: {
           type: 'string',
           minLength: 1,
+        },
+        reset: {
+          type: 'boolean',
+          default: false,
         },
       },
     },

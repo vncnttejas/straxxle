@@ -1,7 +1,9 @@
+const { flatten } = require('lodash');
 const fyersApiV2 = require('fyers-api-v2');
 const config = require('../config');
-const { setDataStore, getStoreData } = require('../utils/data-store');
-const { triggerListen } = require('../utils/ticker-tape');
+const { setStoreData, getStoreData } = require('../utils/data-store');
+const { triggerListen, fetchCurrent } = require('../utils/ticker-tape');
+const { prepareSymbolList, getATMStrikeNumfromCur } = require('../utils/symbol-utils');
 
 const handler = async (req, reply) => {
   const fyersToken = await fyersApiV2.generate_access_token({
@@ -18,10 +20,16 @@ const handler = async (req, reply) => {
   fyersApiV2.setAppId(fyersCred.appId);
   fyersApiV2.setRedirectUrl(fyersCred.redirect_uri);
   fyersApiV2.setAccessToken(fyersCred.access_token);
-  setDataStore('fyersCred', fyersCred);
+  setStoreData('fyersCred', fyersCred);
   // Listen to default symbols
-  const defaultWatchSymbols = Object.values(getStoreData('defaultSymbols')).map(({ symbol }) => (symbol));
-  setDataStore('watchList.defaultWatchSymbols', defaultWatchSymbols);
+  const defaultSymbolObjs = Object.values(getStoreData('defaultSymbols'));
+  const watchList = await Promise.all(defaultSymbolObjs.map(async (symbolObj) => {
+    const current = await fetchCurrent(symbolObj.shortName);
+    setStoreData(`defaultSymbols.${symbolObj.shortName}.current`, current);
+    const atm = getATMStrikeNumfromCur(current, symbolObj);
+    return prepareSymbolList(atm, symbolObj.shortName, symbolObj.expiry);
+  }));
+  setStoreData('watchList', flatten(watchList));
   triggerListen();
   reply.redirect(config.fyersCred.frontendRedirect);
 };

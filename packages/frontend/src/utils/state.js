@@ -21,13 +21,11 @@ export const optionChainSelector = selector({
   key: 'optionChainSelector',
   get: ({ get }) => {
     const tape = get(tapeState);
-    const optionStrikes = filter(Object.values(tape), 'isOption');
-    return keyBy(optionStrikes, 'symbol');
+    return keyBy(tape, 'symbol');
   },
   set: ({ get, set }) => {
     const tape = get(tapeState);
-    const optionStrikes = filter(Object.values(tape), 'isOption');
-    const optionStrikeKeys = map(optionStrikes, 'symbol');
+    const optionStrikeKeys = Object.keys(tape);
     const newTape = produce(tape, (draft) => {
       optionStrikeKeys.forEach((strike) => {
         delete draft[strike];

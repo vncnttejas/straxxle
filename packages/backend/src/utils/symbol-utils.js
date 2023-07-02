@@ -11,8 +11,8 @@ const getSymbolData = (symbol) => {
   throw new Error(`Invalid symbol provided: ${symbol}`);
 };
 
-const getATMStrikeNumfromCur = (num) => {
-  const strikeDiff = 50;
+const getATMStrikeNumfromCur = (num, symbolObj) => {
+  const { strikeDiff } = symbolObj;
   return Math.round(num / strikeDiff) * strikeDiff;
 };
 

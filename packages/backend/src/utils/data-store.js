@@ -1,67 +1,85 @@
 const { get, set, unset } = require('lodash');
 
 const globalDataStore = {
+  tape: {},
+  subTape: {},
+  ocContext: null,
+  getAll: false,
+  streamLive: false,
   defaultSymbols: {
     NIFTY: {
       shortName: 'NIFTY',
       prefix: 'NSE:NIFTY',
       symbol: 'NSE:NIFTY50-INDEX',
       strikeDiff: 50,
-      strikeExtreme: 600,
-      expiries: [{
-        title: '23rd June',
-        slug: '23JUN',
-        type: 'monthly',
-      }],
+      strikeExtreme: 800,
+      expiry: '23706',
+      current: 0,
     },
     FINNIFTY: {
       shortName: 'FINNIFTY',
       prefix: 'NSE:FINNIFTY',
       symbol: 'NSE:FINNIFTY-INDEX',
       strikeDiff: 50,
-      strikeExtreme: 600,
-      expiries: [{
-        title: '23rd June',
-        slug: '23JUN',
-        type: 'monthly',
-      }],
+      strikeExtreme: 800,
+      expiry: '23704',
+      current: 0,
     },
     BANKNIFTY: {
       shortName: 'BANKNIFTY',
       prefix: 'NSE:BANKNIFTY',
       symbol: 'NSE:NIFTYBANK-INDEX',
       strikeDiff: 100,
-      strikeExtreme: 1200,
-      expiries: [{
-        title: '23rd June',
-        slug: '23JUN',
-        type: 'monthly',
-      }],
+      strikeExtreme: 1600,
+      expiry: '23706',
+      current: 0,
     },
   },
-  watchList: {
-    defaultWatchSymbols: [
-      'NSE:NIFTY50-INDEX',
-      'NSE:FINNIFTY-INDEX',
-      'NSE:NIFTYBANK-INDEX',
-    ],
-    optionChainSymbols: [],
-    positionWatchSymbols: [],
-  },
+  watchList: [],
 };
 
-const setDataStore = (field, update) => {
+const getDataFactory = (dataCore) => (key) => {
+  switch (typeof key) {
+    case 'string':
+      return get(dataCore, key);
+    case 'function':
+      return key(dataCore);
+    case 'undefined':
+      return dataCore;
+    default:
+      throw new Error('Invalid param provided');
+  }
+};
+
+// Main DataStore
+const getStoreData = getDataFactory(globalDataStore);
+const setStoreData = (field, update) => {
   set(globalDataStore, field, update);
 };
-
 const unsetDataStore = (field) => {
   unset(globalDataStore, field);
 };
 
-const getStoreData = (key) => (key ? get(globalDataStore, key) : globalDataStore);
+// Tape DataStore
+const tape = getStoreData('tape');
+const getTape = getDataFactory(tape);
+const setTape = (field, update) => {
+  set(tape, field, update);
+};
+
+// Subtape DataStore
+const subTape = getStoreData('subTape');
+const getSubTape = getDataFactory(subTape);
+const setSubTape = (field, update) => {
+  set(subTape, field, update);
+};
 
 module.exports = {
+  getTape,
+  setTape,
+  getSubTape,
+  setSubTape,
   unsetDataStore,
-  setDataStore,
+  setStoreData,
   getStoreData,
 };

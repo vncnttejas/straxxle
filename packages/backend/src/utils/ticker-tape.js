@@ -1,13 +1,13 @@
 const fyersApiV2 = require('fyers-api-v2');
 const {
-  memoize, chunk, flatten, xor,
+  memoize, chunk, flatten, pick,
 } = require('lodash');
-const { produce } = require('immer');
-const { set } = require('lodash');
 const {
   getSymbolData, computeStrikeType, processSymbol, getATMStrikeNumfromCur,
 } = require('./symbol-utils');
-const { getStoreData } = require('./data-store');
+const {
+  getStoreData, setSubTape, getSubTape, setTape, getTape,
+} = require('./data-store');
 const { getApp } = require('../app');
 
 const { quotes: Quotes } = fyersApiV2;
@@ -18,8 +18,7 @@ const reqFields = [
   'symbol', 'index', 'strike', 'strikeNum', 'strikeType',
   'contractType', 'expiryType', 'expiryDate', 'lp', 'short_name',
 ];
-let tape = {};
-let subTape = {};
+
 let prevSnapshot = {};
 
 const monthMap = {
@@ -72,9 +71,9 @@ const enrichStrikeData = (tick) => {
   const {
     index, rawExpiry, strikeNum, contractType,
   } = processSymbol(symbol);
-  const currentUnderlying = getStoreData(`defaultSymbols.${index}`).symbol;
-  const currentValue = tape[currentUnderlying].lp;
-  const atm = getATMStrikeNumfromCur(currentValue);
+  const symbolObj = getStoreData(`defaultSymbols.${index}`);
+  const currentValue = symbolObj.current;
+  const atm = getATMStrikeNumfromCur(currentValue, symbolObj);
   const { expiryType, expiryDate } = processExpiry(rawExpiry);
   const strikeDiffPts = contractType === 'PE' ? atm - strikeNum : strikeNum - atm;
   const strikeType = computeStrikeType(strikeNum, currentValue, contractType);
@@ -95,32 +94,6 @@ const enrichStrikeData = (tick) => {
   };
 };
 
-const setTape = (newTick) => {
-  const isOption = !!newTick.LTQ;
-  const { symbol } = newTick;
-  let data = newTick;
-  if (isOption) {
-    data = enrichStrikeData(newTick);
-  }
-  tape = produce(tape, (draft) => {
-    set(draft, symbol, data);
-    set(draft, `${symbol}.isOption`, isOption);
-  });
-  subTape = produce(subTape, (draft) => {
-    set(draft, `${symbol}.isOption`, isOption);
-    reqFields.forEach((field) => {
-      set(draft, `${symbol}.${field}`, data[field]);
-    });
-  });
-};
-
-const getTape = (cb) => {
-  if (cb && typeof cb !== 'function') {
-    throw new Error('Expects empty param or a callback as param');
-  }
-  return cb ? cb(tape) : tape;
-};
-
 const fetchCurrent = async (stock) => {
   const { symbol } = getSymbolData(stock);
   const quotes = new Quotes();
@@ -132,7 +105,7 @@ const flattenWatchList = (watchList) => flatten(Object.values(watchList));
 
 const maxWatchItems = 50;
 const triggerListen = () => {
-  let watchListSymbols = flattenWatchList(getStoreData('watchList'));
+  const watchListSymbols = flattenWatchList(getStoreData('watchList'));
   app.log.info(watchListSymbols, 'Listening for symbol updates');
   const chunkedWatchLists = chunk(watchListSymbols, maxWatchItems);
   const token = getStoreData('fyersCred.secret_key');
@@ -145,33 +118,22 @@ const triggerListen = () => {
     fyersApiV2.fyers_connect(request, (data) => {
       const tickUpdate = JSON.parse(data);
       if (tickUpdate.d?.['7208']?.length) {
-        setTape(tickUpdate.d['7208'][0].v);
-      }
-      const newWatchList = flattenWatchList(getStoreData('watchList'));
-      const diff = xor(newWatchList, watchListSymbols);
-      if (diff.length) {
-        app.log.info(diff, 'Watchlist updated');
-        watchListSymbols = newWatchList;
-        setTimeout(() => {
-          fyersApiV2.fyers_unsuscribe({
-            symbol: watchListSymbols,
-            dataType: 'symbolUpdate',
-            token,
-          });
-        }, 1000);
-        setTimeout(() => {
-          triggerListen();
-        }, 1100);
+        const strikeData = tickUpdate.d['7208'][0].v;
+        const { symbol } = strikeData;
+        const symbolData = enrichStrikeData(strikeData);
+        setTape(symbol, symbolData);
+        setSubTape(symbol, pick(symbolData, reqFields));
       }
     });
   });
 };
 
 const getTapeDiff = (getAll = false) => {
+  const subTape = getSubTape();
   if (getAll) {
     return subTape;
   }
-  const { optionChainSymbols } = getStoreData('watchList');
+  const optionChainSymbols = getStoreData('watchList');
   if (!optionChainSymbols?.length) {
     return [];
   }
