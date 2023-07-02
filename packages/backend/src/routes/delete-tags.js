@@ -1,6 +1,4 @@
-const { fetchCurrent } = require('../utils/ticker-tape');
-
-const handler = async () => fetchCurrent();
+const handler = async () => 'delete-tags';
 
 module.exports = {
   method: 'DELETE',
