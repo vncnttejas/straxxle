@@ -1,3 +1,8 @@
+import { useEffect } from 'react';
+import { io } from 'socket.io-client';
+import axios from 'axios';
+import { useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
+import { processSymbol } from '@stxl/stock-utils';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -6,20 +11,14 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { styled } from '@mui/material/styles';
 import { Paper } from '@mui/material';
-import { useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
 import './OptionChain.css';
 import {
   currentInlineEdit,
-  inlineEditsState,
   optionChainSelector,
   optionChainStrikesSelector,
-  positionState,
   tapeState,
 } from '../../utils/state';
 import { OptionChainRadioRow } from './OptionChainRow';
-import { useEffect } from 'react';
-import { io } from 'socket.io-client';
-import axios from 'axios';
 
 export const StrikeCell = styled(TableCell)(() => ({
   paddingTop: 2,
@@ -31,14 +30,12 @@ const socket = io('http://developer.vbox');
 const OptionChainRadioGrid = () => {
   const setTape = useSetRecoilState(tapeState);
   const resetOptionChain = useResetRecoilState(optionChainSelector);
-  const inlineEdits = useRecoilValue(currentInlineEdit);
-  const position = useRecoilValue(positionState);
+  const { symbol } = useRecoilValue(currentInlineEdit);
   useEffect(() => {
-    console.log(inlineEdits);
-    console.log(position);
     resetOptionChain();
+    const { index } = processSymbol(symbol);
     const body = {
-      symbol: 'NIFTY',
+      symbol: index,
     };
     axios.post('/api/set-oc-context', body);
     return () => {

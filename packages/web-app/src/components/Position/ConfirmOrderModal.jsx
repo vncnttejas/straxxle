@@ -7,7 +7,6 @@ import {
 import { flatten, values } from 'lodash';
 import { useCallback } from 'react';
 import axios from 'axios';
-import { mutate } from 'swr';
 import {
   confirmOrderModal,
   inlineEditsState,
