@@ -4,9 +4,10 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import { Paper } from '@mui/material';
+import { Grid, Paper } from '@mui/material';
 import { useRecoilValue } from 'recoil';
 import './OptionChain.css';
+import NewEntry from './NewEntry';
 import { optionChainStrikesSelector } from '../../utils/state';
 import { OptionChainRow, StrikeCell } from './OptionChainRow';
 import ContractSelect from './ContractSelect';
@@ -38,7 +39,14 @@ const OptionChainGrid = () => {
 
   return (
     <Paper sx={{ width: '100%', minHeight: 400 }}>
-      <ContractSelect />
+      <Grid container spacing={2}>
+        <Grid item xs={10}>
+          <NewEntry />
+        </Grid>
+        <Grid item xs={2}>
+          <ContractSelect />
+        </Grid>
+      </Grid>
       <TableContainer>
         <Table aria-label="sticky table">
           <TableHead>

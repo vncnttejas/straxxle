@@ -49,7 +49,6 @@ function NewEntry() {
       >
         Order
       </Button>
-      <hr />
     </Box>
   );
 }

@@ -55,7 +55,7 @@ function ConfirmOrderModal() {
     >
       <Paper sx={{ width: '100%', minHeight: 400, p: 1 }}>
         <Typography variant="h5" p={1}>
-          Execute Orders
+          Order Summary
         </Typography>
         <Table sx={{ mb: 3 }}>
           <TableHead>

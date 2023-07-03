@@ -1,4 +1,5 @@
 const fyersApiV2 = require('fyers-api-v2');
+const { getLastThursdayOfMonth } = require('stock-utils');
 const {
   memoize, chunk, flatten, pick,
 } = require('lodash');
@@ -40,12 +41,6 @@ const singleDigitMonthMap = {
   O: 10,
   N: 11,
   D: 12,
-};
-
-const getLastThursdayOfMonth = (year, month) => {
-  const lastDay = new Date(year, month + 1, 0);
-  const lastThursday = new Date(year, month, lastDay.getDate() - lastDay.getDay() + 4);
-  return lastThursday.getDate();
 };
 
 const processExpiry = memoize((rawExpiry) => {

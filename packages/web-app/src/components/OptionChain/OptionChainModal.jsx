@@ -1,6 +1,5 @@
-import { Dialog, Grid } from '@mui/material';
+import { Dialog } from '@mui/material';
 import styled from '@emotion/styled';
-import NewEntry from './NewEntry';
 import { useRecoilState } from 'recoil';
 import OptionChainGrid from './OptionChainGrid';
 import {
@@ -27,12 +26,7 @@ export const OptionChainModalFull = () => {
       maxWidth="lg"
       fullWidth={true}
     >
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
-          <OptionChainGrid />
-          <NewEntry />
-        </Grid>
-      </Grid>
+      <OptionChainGrid />
     </Dialog>
   );
 };
