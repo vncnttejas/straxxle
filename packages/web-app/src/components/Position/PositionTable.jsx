@@ -4,7 +4,6 @@ import {
   GridActionsCellItem,
   useGridApiContext,
 } from '@mui/x-data-grid';
-import useSWR from 'swr';
 import { io } from 'socket.io-client';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { Suspense, useCallback, useEffect, useMemo } from 'react';

@@ -1,8 +1,8 @@
 const { compact, flatten, uniq } = require('lodash');
+const { symbolRegexStr } = require('@stxl/stock-utils');
 const { Orders } = require('../models/Orders');
 const { Tags } = require('../models/Tags');
 const { getTape } = require('../utils/ticker-tape');
-const { symbolRegexp } = require('../utils/symbol-utils');
 const { appConstants } = require('../config');
 
 const handler = async (req) => {
@@ -54,7 +54,7 @@ module.exports = {
         properties: {
           symbol: {
             type: 'string',
-            pattern: symbolRegexp,
+            pattern: symbolRegexStr,
           },
           qty: {
             type: 'number',

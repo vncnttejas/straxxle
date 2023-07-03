@@ -18,6 +18,7 @@
     "@fastify/cors": "^8.3.0",
     "@fastify/session": "^10.0.0",
     "@fastify/swagger": "7.4.1",
+    "@stxl/stock-utils": "^1.0.0",
     "ajv-keywords": "^5.1.0",
     "axios": "^1.4.0",
     "dotenv-safe": "8.2.0",

@@ -1,9 +1,10 @@
 const { flatten } = require('lodash');
 const fyersApiV2 = require('fyers-api-v2');
+const { getATMStrikeNumfromCur } = require('@stxl/stock-utils');
+const { prepareSymbolList } = require('@stxl/stock-utils');
 const config = require('../config');
 const { setStoreData, getStoreData } = require('../utils/data-store');
 const { triggerListen, fetchCurrent } = require('../utils/ticker-tape');
-const { prepareSymbolList, getATMStrikeNumfromCur } = require('../utils/symbol-utils');
 
 const handler = async (req, reply) => {
   const fyersToken = await fyersApiV2.generate_access_token({
@@ -27,7 +28,7 @@ const handler = async (req, reply) => {
     const current = await fetchCurrent(symbolObj.shortName);
     setStoreData(`defaultSymbols.${symbolObj.shortName}.current`, current);
     const atm = getATMStrikeNumfromCur(current, symbolObj);
-    return prepareSymbolList(atm, symbolObj.shortName, symbolObj.expiry);
+    return prepareSymbolList(symbolObj, atm);
   }));
   setStoreData('watchList', flatten(watchList));
   triggerListen();

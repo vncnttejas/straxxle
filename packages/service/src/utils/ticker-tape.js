@@ -1,11 +1,9 @@
 const fyersApiV2 = require('fyers-api-v2');
-const { getLastThursdayOfMonth } = require('stock-utils');
+const { processExpiry } = require('@stxl/stock-utils');
+const { chunk, flatten, pick } = require('lodash');
 const {
-  memoize, chunk, flatten, pick,
-} = require('lodash');
-const {
-  getSymbolData, computeStrikeType, processSymbol, getATMStrikeNumfromCur,
-} = require('./symbol-utils');
+  computeStrikeType, processSymbol, getATMStrikeNumfromCur,
+} = require('@stxl/stock-utils');
 const {
   getStoreData, setSubTape, getSubTape, setTape, getTape,
 } = require('./data-store');
@@ -22,44 +20,13 @@ const reqFields = [
 
 let prevSnapshot = {};
 
-const monthMap = {
-  JAN: 0,
-  FEB: 1,
-  MAR: 2,
-  APR: 3,
-  MAY: 4,
-  JUN: 5,
-  JUL: 6,
-  AUG: 7,
-  SEP: 8,
-  OCT: 9,
-  NOV: 10,
-  DEC: 11,
-};
-
-const singleDigitMonthMap = {
-  O: 10,
-  N: 11,
-  D: 12,
-};
-
-const processExpiry = memoize((rawExpiry) => {
-  const match = /^([0-9]{2})([a-z0-9])([0-9]{2})$/i.exec(rawExpiry);
-  if (match?.[0]) {
-    // eslint-disable-next-line no-unused-vars
-    const [_, year, month, day] = match;
-    const monthNum = singleDigitMonthMap[month.toUpperCase()] || parseInt(month - 1, 10);
-    return {
-      expiryType: 'weekly',
-      expiryDate: new Date(+`20${year}`, monthNum, +day + 1),
-    };
+const getSymbolData = (symbol) => {
+  const savedSymbols = getStoreData('defaultSymbols');
+  if (savedSymbols) {
+    return savedSymbols[symbol];
   }
-  const year = rawExpiry.slice(0, 2);
-  return {
-    expiryType: 'monthly',
-    expiryDate: getLastThursdayOfMonth(+`20${year}`, monthMap[rawExpiry]),
-  };
-});
+  throw new Error(`Invalid symbol provided: ${symbol}`);
+};
 
 const enrichStrikeData = (tick) => {
   const { symbol } = tick;
@@ -145,6 +112,7 @@ const getTapeDiff = (getAll = false) => {
 module.exports = {
   getTape,
   setTape,
+  getSymbolData,
   fetchCurrent,
   getTapeDiff,
   enrichStrikeData,
