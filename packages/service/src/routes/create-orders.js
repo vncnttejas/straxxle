@@ -1,5 +1,5 @@
 const { compact, flatten, uniq } = require('lodash');
-const { symbolRegexStr } = require('@stxl/stock-utils');
+const { symbolRegexStr } = require('../utils/symbol-utils');
 const { Orders } = require('../models/Orders');
 const { Tags } = require('../models/Tags');
 const { getTape } = require('../utils/ticker-tape');

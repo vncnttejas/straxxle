@@ -1,7 +1,7 @@
 const {
   flatten, difference, uniq, compact,
 } = require('lodash');
-const { symbolRegexStr } = require('@stxl/stock-utils');
+const { symbolRegexStr } = require('../utils/symbol-utils');
 const { Baskets } = require('../models/Baskets');
 const { Tags } = require('../models/Tags');
 const { getTape } = require('../utils/ticker-tape');

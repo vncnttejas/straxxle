@@ -61,6 +61,7 @@ const sortPositionList = (positions) => {
   // Put all open positions in the start and closed after
   return [...openPositions, ...closed];
 };
+const memoSortPositionList = _.memoize(sortPositionList);
 
 const defaultExitFees = {
   brokerage: 0,
@@ -138,6 +139,7 @@ const computeSummary = (pnlPosition) => produce(pnlPosition, (draft) => {
   });
   return acc;
 });
+const memoComputeSummary = _.memoize(computeSummary);
 
 const computeRawPosition = (orders) => {
   const finalPos = {};
@@ -162,6 +164,7 @@ const computeRawPosition = (orders) => {
       finalPos[symbol].posQty = orderQty;
       finalPos[symbol].posAvg = txnPrice;
       finalPos[symbol].posVal = orderVal;
+      finalPos[symbol].cumOpenVal = orderVal;
       finalPos[symbol].posOrderList = [orderDetails];
     } else {
       // Compute the position Qty, Value and Average
@@ -203,10 +206,31 @@ const computeRawPosition = (orders) => {
   });
   return finalPos;
 };
+const memoComputeRawPosition = _.memoize(computeRawPosition);
+
+const prepareOrderForMarginCalc = (orders) => {
+  if (!(Array.isArray(orders) && orders.length)) {
+    throw Error('Invalid orders');
+  }
+  return orders.map((order) => {
+    const { symbol, posQty, posAvg } = order;
+    return {
+      symbol,
+      qty: posQty,
+      side: Math.sign(posQty),
+      type: 1,
+      limitPrice: posAvg,
+    };
+  });
+};
 
 module.exports = {
-  computeRawPosition,
+  memoComputeSummary,
+  memoSortPositionList,
+  memoComputeRawPosition,
   computeSummary,
   sortPositionList,
+  computeRawPosition,
   computeStrikeWisePnl,
+  prepareOrderForMarginCalc,
 };

@@ -1,9 +1,8 @@
 const fyersApiV2 = require('fyers-api-v2');
-const { processExpiry } = require('@stxl/stock-utils');
 const { chunk, flatten, pick } = require('lodash');
 const {
-  computeStrikeType, processSymbol, getATMStrikeNumfromCur,
-} = require('@stxl/stock-utils');
+  computeStrikeType, processSymbol, getATMStrikeNumfromCur, processExpiry,
+} = require('./symbol-utils');
 const {
   getStoreData, setSubTape, getSubTape, setTape, getTape,
 } = require('./data-store');

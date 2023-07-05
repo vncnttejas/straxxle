@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { io } from 'socket.io-client';
 import axios from 'axios';
 import { useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
-import { processSymbol } from '@stxl/stock-utils';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -25,6 +24,20 @@ export const StrikeCell = styled(TableCell)(() => ({
   paddingBottom: 2,
 }));
 
+const processSymbol = (symbol) => {
+  const [_, index, rawExpiry, strikeNum, contractType] =
+    optSymbolRegex.exec(symbol);
+  return {
+    index,
+    rawExpiry,
+    strikeNum,
+    contractType,
+  };
+};
+
+const symbolRegexStr =
+  '^NSE:(NIFTY|BANKNIFTY|FINNIFTY)([0-9]{2}[A-Z0-9]{3})([0-9]{3,6})([A-Z]{2})$';
+const optSymbolRegex = new RegExp(symbolRegexStr);
 const socket = io('http://developer.vbox');
 
 const OptionChainRadioGrid = () => {
@@ -32,8 +45,8 @@ const OptionChainRadioGrid = () => {
   const resetOptionChain = useResetRecoilState(optionChainSelector);
   const { symbol } = useRecoilValue(currentInlineEdit);
   useEffect(() => {
-    resetOptionChain();
     const { index } = processSymbol(symbol);
+    resetOptionChain();
     const body = {
       symbol: index,
     };

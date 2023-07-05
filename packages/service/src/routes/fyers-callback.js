@@ -1,7 +1,7 @@
 const { flatten } = require('lodash');
 const fyersApiV2 = require('fyers-api-v2');
-const { getATMStrikeNumfromCur } = require('@stxl/stock-utils');
-const { prepareSymbolList } = require('@stxl/stock-utils');
+const { getATMStrikeNumfromCur } = require('../utils/symbol-utils');
+const { prepareSymbolList } = require('../utils/symbol-utils');
 const config = require('../config');
 const { setStoreData, getStoreData } = require('../utils/data-store');
 const { triggerListen, fetchCurrent } = require('../utils/ticker-tape');
@@ -17,6 +17,7 @@ const handler = async (req, reply) => {
     appId: config.fyersCred.appId,
     secret_key: config.fyersCred.secretId,
     redirect_uri: config.fyersCred.redirectUri,
+    token: `${config.fyersCred.appId}:${fyersToken.access_token}`,
   };
   fyersApiV2.setAppId(fyersCred.appId);
   fyersApiV2.setRedirectUrl(fyersCred.redirect_uri);

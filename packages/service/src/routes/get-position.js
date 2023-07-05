@@ -1,12 +1,8 @@
 const _ = require('lodash');
 const { Orders } = require('../models/Orders');
 const {
-  computeStrikeWisePnl, computeSummary, computeRawPosition, sortPositionList,
+  computeStrikeWisePnl, memoComputeRawPosition, memoSortPositionList, memoComputeSummary,
 } = require('../utils/position');
-
-const memoComputeRawPosition = _.memoize(computeRawPosition);
-const memoComputeSummary = _.memoize(computeSummary);
-const memoSortPositionList = _.memoize(sortPositionList);
 
 const handler = async (req) => {
   const { startTime, endTime } = req.query;
