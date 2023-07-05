@@ -6,6 +6,7 @@ const globalDataStore = {
   ocContext: null,
   getAll: false,
   streamLive: false,
+  fyersCred: {},
   defaultSymbols: {
     NIFTY: {
       shortName: 'NIFTY',
