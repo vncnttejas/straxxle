@@ -327,8 +327,8 @@ function PositionTable() {
           <PositionGrid
             rows={strikeWiseData}
             columns={columns}
-            paginationModel={{ page: 0, pageSize: 100 }}
             hideFooter
+            paginationModel={{ page: 0, pageSize: 100 }}
             checkboxSelection
             disableRowSelectionOnClick
             disableColumnMenu

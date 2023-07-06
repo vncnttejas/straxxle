@@ -27,6 +27,7 @@ const handler = async (req) => {
       const pnlPosition = computeStrikeWisePnl(positions);
       const sortedPosition = memoSortPositionList(pnlPosition);
       const summary = computeSummary(sortedPosition);
+      req.log.info('Sending position update');
       app.io.emit('position', {
         position: keyBy(sortedPosition, 'symbol'),
         summary,

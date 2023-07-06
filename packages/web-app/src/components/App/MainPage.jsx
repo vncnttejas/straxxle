@@ -10,6 +10,7 @@ import {
   Snackbar,
   Slide,
 } from '@mui/material';
+import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import { useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
 import useSWR from 'swr';
 import {
@@ -23,8 +24,10 @@ import {
   newOrderSnackbarState,
   optionChainModalState,
   optionChainRadioModal,
+  orderListModal,
 } from '../../utils/state';
 import ConfirmOrderModal from '../Position/ConfirmOrderModal';
+import OrderListModal from '../Position/OrderListModal';
 
 export const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
@@ -42,6 +45,7 @@ function MainPage() {
   const { open: openConfirmModal } = useRecoilValue(confirmOrderModal);
   const { open: openRadioModal } = useRecoilValue(optionChainRadioModal);
   const { open: openChainModal } = useRecoilValue(optionChainModalState);
+  const { open: openOrderModal } = useRecoilValue(orderListModal);
 
   // Alert states
   const orderSnackBar = useRecoilValue(newOrderSnackbarState);
@@ -49,6 +53,7 @@ function MainPage() {
   const resetOrderSnackbar = useResetRecoilState(newOrderSnackbarState);
 
   const setOpen = useSetRecoilState(optionChainModalState);
+  const setOrderModalOpen = useSetRecoilState(orderListModal);
 
   return (
     <Container maxWidth="xl">
@@ -70,6 +75,13 @@ function MainPage() {
       {openChainModal && <OptionChainModalFull />}
       {openRadioModal && <OptionChainRadioModal />}
       {openConfirmModal && <ConfirmOrderModal />}
+      {openOrderModal && <OrderListModal />}
+      <SpeedDial
+        ariaLabel="Orders"
+        sx={{ position: 'absolute', bottom: 20, left: 20 }}
+        icon={<FormatListBulletedIcon />}
+        onClick={() => setOrderModalOpen((prev) => ({ open: !prev.open }))}
+      />
       <SpeedDial
         ariaLabel="Add Order/Basket"
         sx={{ position: 'absolute', bottom: 20, right: 20 }}

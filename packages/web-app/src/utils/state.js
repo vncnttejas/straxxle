@@ -2,7 +2,7 @@ import {
   DefaultValue, atom, atomFamily, selector, selectorFamily,
 } from 'recoil';
 import { produce } from 'immer';
-import { filter, intersection, keyBy, keys, map, set as setObject } from 'lodash';
+import { flatten, intersection, keyBy, orderBy, pick, set as setObject, sortBy } from 'lodash';
 
 export const appConstants = atom({
   key: 'appConstants',
@@ -82,9 +82,38 @@ export const confirmOrderModal = atom({
   },
 });
 
+export const orderListModal = atom({
+  key: 'orderListModal',
+  default: {
+    open: false,
+  },
+});
+
 export const positionState = atom({
   key: 'positionState',
   default: [],
+});
+
+export const orderListSelector = selector({
+  key: 'orderListSelector',
+  get: ({ get }) => {
+    const positions = Object.values(get(positionState));
+    let orders = [];
+    positions.forEach(({ expiry, posOrderList }) => {
+      orders.push(posOrderList.map(order => {
+        const prepOrder = {
+          id: `${order.tt}:${order.symbol}`,
+          expiry,
+          strike: order.strike,
+          qty: order.orderQty / 50,
+          txnPrice: order.txnPrice,
+          time: order.tt * 1000,
+        };
+        return prepOrder;
+      }));
+    });
+    return orderBy(flatten(orders), 'id', 'desc');
+  },
 });
 
 export const positionSummaryState = atom({
