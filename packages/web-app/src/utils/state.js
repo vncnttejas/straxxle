@@ -3,6 +3,7 @@ import {
 } from 'recoil';
 import { produce } from 'immer';
 import { flatten, intersection, keyBy, orderBy, pick, set as setObject, sortBy } from 'lodash';
+import { processSymbol } from './order';
 
 export const appConstants = atom({
   key: 'appConstants',
@@ -264,7 +265,7 @@ export const inlineEditsSelector = selectorFamily({
     if (id) {
       const updatedEdits = produce(inlineEdits, (draft) => {
         delete draft[id].newQty;
-        if (!draft[id].strike && !draft[id].newSymbol) {
+        if (!draft[id].newSymbol) {
           delete draft[id];
         }
         return draft;
@@ -276,7 +277,6 @@ export const inlineEditsSelector = selectorFamily({
     id = newValue?.resetStrike;
     if (id) {
       const updatedEdits = produce(inlineEdits, (draft) => {
-        delete draft[id].strike;
         delete draft[id].newSymbol;
         if (!draft[id].newQty) {
           delete draft[id];
@@ -295,21 +295,22 @@ export const inlineEditsSelector = selectorFamily({
   },
 });
 
-export const inlineEditIndicator = selector({
-  key: 'inlineEditIndicator',
+export const strikeWiseDataSelector = selector({
+  key: 'strikeWiseDataSelector',
   get: ({ get }) => {
     const strikeWisePosition = get(positionState);
-    return produce(Object.values(strikeWisePosition), (draft) => {
+    return produce(strikeWisePosition, (draft) => {
       // eslint-disable-next-line no-restricted-syntax
-      for (const pos of draft) {
-        const inlineEdit = get(inlineEditsSelector(pos.symbol));
+      for (let symbol in draft) {
+        const inlineEdit = get(inlineEditsSelector(symbol));
         if (!inlineEdit) {
-          // eslint-disable-next-line no-continue
-          continue;
+          return;
         }
+        const { strikeNum, contractType } = processSymbol(inlineEdit.newSymbol);
+        const pos = draft[symbol];
         pos.prevStrike = pos.strike;
         pos.prevQty = pos.posQty;
-        pos.strike = inlineEdit.strike || pos.strike;
+        pos.strike = `${strikeNum}${contractType}` || pos.strike;
         pos.newSymbol = inlineEdit.newSymbol;
         pos.posQty = inlineEdit.newQty ?? pos.posQty;
         pos.strikeEdited = pos.strike !== pos.prevStrike;
@@ -323,7 +324,7 @@ export const inlineEditIndicator = selector({
 export const orderViewSelector = selector({
   key: 'orderViewSelector',
   get: ({ get }) => {
-    const inlineEdits = get(inlineEditIndicator);
+    const inlineEdits = get(strikeWiseDataSelector);
     const { lotSize } = get(appConstants);
 
     return produce(inlineEdits, (draft) => {
@@ -341,14 +342,12 @@ export const orderViewSelector = selector({
           list = [
             {
               symbol: item.id,
-              strike: item.prevStrike,
               qty: (0 - item.prevQty) * lotSize,
               expiry: item.expiry,
               type: 'remove',
             },
             {
               symbol: item.newSymbol,
-              strike: item.strike,
               qty: item.posQty * lotSize,
               expiry: item.expiry,
               type: 'add',
@@ -358,7 +357,6 @@ export const orderViewSelector = selector({
           list = [
             {
               symbol: item.symbol,
-              strike: item.strike,
               qty: (item.posQty - item.prevQty) * lotSize,
               expiry: item.expiry,
               type: 'add',
@@ -393,6 +391,7 @@ export const actionDisplaySelector = selector({
     btnDisplayState.enableClear = commonItemLength > 0;
     btnDisplayState.enableDelete = selectedLength > 0 && commonItemLength <= 0;
     btnDisplayState.enableOrder = commonItemLength > 0;
+    btnDisplayState.enableMove = selectedLength > 0;
     return btnDisplayState;
   },
 });

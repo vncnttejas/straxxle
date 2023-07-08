@@ -12,12 +12,14 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import BackspaceIcon from '@mui/icons-material/Backspace';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { produce } from 'immer';
 import {
   actionDisplaySelector,
   confirmOrderModal,
   currentInlineEdit,
-  inlineEditIndicator,
+  strikeWiseDataSelector,
   inlineEditsSelector,
   inlineEditsState,
   optionChainRadioModal,
@@ -27,6 +29,7 @@ import {
 } from '../../utils/state';
 import Loading from '../Loading/Loading';
 import { set } from 'lodash';
+import { getNextStrikeSymbol } from '../../utils/order';
 
 const PositionGrid = styled(DataGrid)(() => ({
   '& .stxl-row-inactive': {
@@ -148,10 +151,11 @@ function PositionTable() {
   const [rowSelectionModel, setRowSelectionModel] = useRecoilState(
     posGridRowSelectionState
   );
-  const { enableOrder, enableDelete, enableClear } = useRecoilValue(
+  const { enableOrder, enableDelete, enableClear, enableMove } = useRecoilValue(
     actionDisplaySelector
   );
-  const strikeWiseData = useRecoilValue(inlineEditIndicator);
+  const indexedStrikeWiseData = useRecoilValue(strikeWiseDataSelector);
+  const strikeWiseData = Object.values(indexedStrikeWiseData);
   const setOpenModal = useSetRecoilState(optionChainRadioModal);
   const setCurrentEdit = useSetRecoilState(currentInlineEdit);
   const setSelection = useSetRecoilState(inlineEditsState);
@@ -191,6 +195,23 @@ function PositionTable() {
         })
       );
       setConfirmModal({ open: true, symbols });
+    },
+    [setConfirmModal, setSelection]
+  );
+
+  const getNextStrikeNum = useCallback(
+    (symbols, row, dir) => {
+      setSelection((prev) => {
+        return produce(prev, (draft) => {
+          symbols.forEach((symbol) => {
+            const nextStrike = row?.newSymbol
+              ? getNextStrikeSymbol(row.newSymbol, dir)
+              : getNextStrikeSymbol(row.symbol, dir);
+            set(draft, `${symbol}.newSymbol`, nextStrike);
+            return draft;
+          });
+        });
+      });
     },
     [setConfirmModal, setSelection]
   );
@@ -247,10 +268,9 @@ function PositionTable() {
         field: 'actions',
         type: 'actions',
         headerName: 'Actions',
-        width: 300,
+        width: 200,
         cellClassName: 'actions',
         getActions: ({ id, row }) => {
-          let actions = [];
           const orderNow = (
             <GridActionsCellItem
               key="RocketLaunchIcon"
@@ -275,10 +295,27 @@ function PositionTable() {
               onClick={() => resetChanges([id])}
             />
           );
+          const increaseStrike = (
+            <GridActionsCellItem
+              key="KeyboardArrowUpIcon"
+              icon={<KeyboardArrowUpIcon />}
+              label="Clear changes"
+              onClick={() => getNextStrikeNum([id], row, 1)}
+            />
+          );
+          const decreaseStrike = (
+            <GridActionsCellItem
+              key="KeyboardArrowDownIcon"
+              icon={<KeyboardArrowDownIcon />}
+              label="Clear changes"
+              onClick={() => getNextStrikeNum([id], row, -1)}
+            />
+          );
+          let actions = [];
           if (row.strikeEdited || row.qtyEdited) {
-            actions = [orderNow, resetOrder];
+            actions = [orderNow, resetOrder, increaseStrike, decreaseStrike];
           } else if (row.posQty) {
-            actions = [deleteOrder];
+            actions = [deleteOrder, increaseStrike, decreaseStrike];
           }
           return actions;
         },
@@ -319,6 +356,28 @@ function PositionTable() {
             >
               <BackspaceIcon />
             </Button>
+          )}
+          {enableMove && (
+            <>
+              <Button
+                sx={{ px: '10px', minWidth: 'unset' }}
+                onClick={
+                  () => 1
+                  // getNextStrikeNum(rowSelectionModel, , 1)
+                  // @todo fix enableMove code for the entire file
+                }
+              >
+                <KeyboardArrowUpIcon />
+              </Button>
+              <Button
+                sx={{ px: '10px', minWidth: 'unset' }}
+                onClick={() =>
+                  getNextStrikeNum(rowSelectionModel, strikeWiseData, -1)
+                }
+              >
+                <KeyboardArrowDownIcon />
+              </Button>
+            </>
           )}
         </Box>
       </Box>
@@ -392,7 +451,10 @@ function PositionTable() {
                 return classList.join(' ');
               }
             }}
-            isRowSelectable={(params) => params.row.posQty !== 0}
+            isRowSelectable={(params) => {
+              const { posQty, prevQty } = params.row;
+              return !!prevQty || !!posQty;
+            }}
           />
         </Suspense>
       </Box>

@@ -60,7 +60,6 @@ function ConfirmOrderModal() {
           <TableHead>
             <TableRow>
               <TableCell>Symbol</TableCell>
-              <TableCell>Strike</TableCell>
               <TableCell>Expiry</TableCell>
               <TableCell>Qty (Contracts)</TableCell>
             </TableRow>
@@ -72,7 +71,6 @@ function ConfirmOrderModal() {
                 className={`stxl-row-${order?.type}`}
               >
                 <TableCell>{order.symbol}</TableCell>
-                <TableCell>{order.strike}</TableCell>
                 <TableCell>{order.expiry}</TableCell>
                 <TableCell>{order.qty}</TableCell>
               </TableRow>

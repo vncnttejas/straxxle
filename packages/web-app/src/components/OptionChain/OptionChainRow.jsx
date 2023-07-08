@@ -205,7 +205,6 @@ export const OptionChainRadioRow = memo(function OptionChainRadioRow({
       setSelection((prev) => ({
         ...prev,
         newSymbol: e.target.value,
-        strike: inlineEditStrike,
       }));
     },
     [inlineEditStrike, setOpenModal, setSelection]

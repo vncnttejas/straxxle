@@ -26,7 +26,10 @@ const singleDigitMonthMap = {
 
 const getLastThursdayOfMonth = (year, month) => {
   const lastDay = new Date(year, month + 1, 0);
-  const lastThursday = new Date(year, month, lastDay.getDate() - lastDay.getDay() + 4);
+  let lastThursday = new Date(year, month, lastDay.getDate() - lastDay.getDay() + 4);
+  if (lastThursday.getMonth() !== month) {
+    lastThursday = new Date(year, month, lastDay.getDate() - lastDay.getDay() - 3);
+  }
   return lastThursday.getDate();
 };
 
@@ -42,7 +45,7 @@ const processSymbol = (symbol) => {
   };
 };
 
-const processExpiry = memoize((rawExpiry) => {
+const processExpiry = (rawExpiry) => {
   const match = /^([0-9]{2})([a-z0-9])([0-9]{2})$/i.exec(rawExpiry);
   if (match?.[0]) {
     // eslint-disable-next-line no-unused-vars
@@ -54,11 +57,12 @@ const processExpiry = memoize((rawExpiry) => {
     };
   }
   const year = rawExpiry.slice(0, 2);
+  const month = rawExpiry.slice(2, 5);
   return {
     expiryType: 'monthly',
-    expiryDate: getLastThursdayOfMonth(+`20${year}`, monthMap[rawExpiry]),
+    expiryDate: getLastThursdayOfMonth(+`20${year}`, monthMap[month]),
   };
-});
+};
 
 const computeStrikeType = (strikeNum, current, contractType) => {
   const strikeDiff = strikeNum - current;

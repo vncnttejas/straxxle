@@ -14,7 +14,7 @@ const globalDataStore = {
       symbol: 'NSE:NIFTY50-INDEX',
       strikeDiff: 50,
       strikeExtreme: 800,
-      expiry: '23706',
+      expiry: '23JUL',
       current: 0,
     },
     FINNIFTY: {
@@ -23,7 +23,7 @@ const globalDataStore = {
       symbol: 'NSE:FINNIFTY-INDEX',
       strikeDiff: 50,
       strikeExtreme: 800,
-      expiry: '23704',
+      expiry: '23JUL',
       current: 0,
     },
     BANKNIFTY: {
@@ -32,7 +32,7 @@ const globalDataStore = {
       symbol: 'NSE:NIFTYBANK-INDEX',
       strikeDiff: 100,
       strikeExtreme: 1600,
-      expiry: '23706',
+      expiry: '23JUL',
       current: 0,
     },
   },

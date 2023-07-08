@@ -18,26 +18,14 @@ import {
   tapeState,
 } from '../../utils/state';
 import { OptionChainRadioRow } from './OptionChainRow';
+import { processSymbol } from '../../utils/order';
 
 export const StrikeCell = styled(TableCell)(() => ({
   paddingTop: 2,
   paddingBottom: 2,
 }));
 
-const processSymbol = (symbol) => {
-  const [_, index, rawExpiry, strikeNum, contractType] =
-    optSymbolRegex.exec(symbol);
-  return {
-    index,
-    rawExpiry,
-    strikeNum,
-    contractType,
-  };
-};
 
-const symbolRegexStr =
-  '^NSE:(NIFTY|BANKNIFTY|FINNIFTY)([0-9]{2}[A-Z0-9]{3})([0-9]{3,6})([A-Z]{2})$';
-const optSymbolRegex = new RegExp(symbolRegexStr);
 const socket = io('http://developer.vbox');
 
 const OptionChainRadioGrid = () => {
