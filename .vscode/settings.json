@@ -1,11 +1,11 @@
 {
   "eslint.workingDirectories": [
     {
-      "directory": "packages/frontend",
+      "directory": "packages/web-app-ts",
       "changeProcessCWD": true,
     },
     {
-      "directory": "packages/backend",
+      "directory": "packages/service-ts",
       "changeProcessCWD": true,
     }
   ],
