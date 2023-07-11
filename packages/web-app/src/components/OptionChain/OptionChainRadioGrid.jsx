@@ -13,13 +13,15 @@ import './OptionChain.css';
 import { currentInlineEdit, optionChainSelector } from '../../utils/state';
 import { OptionChainRadioRow } from './OptionChainRow';
 import { processSymbol } from '../../utils/order';
+import useOptionChain from './useOptionChain';
 
 export const StrikeCell = styled(TableCell)(() => ({
   paddingTop: 2,
   paddingBottom: 2,
 }));
 
-const OptionChainRadioGrid = ({ optionChain }) => {
+const OptionChainRadioGrid = () => {
+  const optionChain = useOptionChain();
   const resetOptionChain = useResetRecoilState(optionChainSelector);
   const { symbol } = useRecoilValue(currentInlineEdit);
   useEffect(() => {

@@ -9,8 +9,10 @@ import NewEntry from './NewEntry';
 import { OptionChainRow, StrikeCell } from './OptionChainRow';
 import ContractSelect from './ContractSelect';
 import './OptionChain.css';
+import useOptionChain from './useOptionChain';
 
-const OptionChainGrid = ({ optionChain }) => {
+const OptionChainGrid = () => {
+  const optionChain = useOptionChain();
   return (
     <Paper sx={{ width: '100%', minHeight: 400 }}>
       <Grid container spacing={2}>

@@ -270,6 +270,7 @@ function PositionTable() {
         type: 'actions',
         headerName: 'Actions',
         width: 200,
+        align: 'left',
         cellClassName: 'actions',
         getActions: ({ id, row }) => {
           const orderNow = (
@@ -314,7 +315,7 @@ function PositionTable() {
           );
           let actions = [];
           if (row.strikeEdited || row.qtyEdited) {
-            actions = [increaseStrike, decreaseStrike, orderNow, resetOrder];
+            actions = [increaseStrike, decreaseStrike, resetOrder, orderNow];
           } else if (row.posQty) {
             actions = [increaseStrike, decreaseStrike, deleteOrder];
           }

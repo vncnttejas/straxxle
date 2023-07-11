@@ -30,8 +30,8 @@ export const processSymbol = memoize((symbol) => {
   };
 });
 
-export const getNextStrikeSymbol = memoize((symbol, step = 1, strikeStep = 50) => {
+export const getNextStrikeSymbol = (symbol, step = 1, strikeStep = 50) => {
   const { index, rawExpiry, strikeNum, contractType } = processSymbol(symbol);
   const newStrikeNum = parseInt(strikeNum) + step * strikeStep;
   return `NSE:${index}${rawExpiry}${newStrikeNum}${contractType}`;
-});
+};
