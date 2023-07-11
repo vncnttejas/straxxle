@@ -1,0 +1,20 @@
+.stxl-red {
+  color: #ff0000 !important;
+}
+
+.stxl-green {
+  color: #00ff00 !important;
+}
+
+.stxl-cell-edited {
+  background: #1e2e1e7a;
+  outline: 1px solid #e8e8e8cd;
+}
+
+.stxl-row-add {
+  background: #1e2e1e7a;
+}
+
+.stxl-row-remove {
+  background: #3f36369d;
+}
