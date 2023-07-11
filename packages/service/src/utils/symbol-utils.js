@@ -37,6 +37,7 @@ const getATMStrikeNumfromCur = (num, symbolObj) => {
 };
 
 const processSymbol = (symbol) => {
+  // eslint-disable-next-line no-unused-vars
   const [_, index, rawExpiry, strikeNum, contractType] = optSymbolRegex.exec(symbol);
   return {
     index, rawExpiry, strikeNum, contractType,
