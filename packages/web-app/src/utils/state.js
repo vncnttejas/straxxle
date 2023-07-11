@@ -2,7 +2,7 @@ import {
   DefaultValue, atom, atomFamily, selector, selectorFamily,
 } from 'recoil';
 import { produce } from 'immer';
-import { flatten, intersection, keyBy, orderBy, pick, set as setObject, sortBy } from 'lodash';
+import { flatten, forEach, intersection, keyBy, orderBy, pick, set as setObject, sortBy } from 'lodash';
 import { processSymbol } from './order';
 
 export const appConstants = atom({
@@ -228,14 +228,20 @@ export const optionChainStrikesSelector = selector({
     const trimmedOptionData = get(trimmedOptionFields);
     return produce(trimmedOptionData, (draft) => {
       const prepList = {};
-      for (const option in draft) {
-        const optionData = draft[option];
+      forEach(draft, (optionData) => {
         const { contractType } = optionData;
         const { strikeNum } = optionData;
         setObject(prepList, `${strikeNum}.${contractType}`, optionData);
-      }
+      });
       return prepList;
     });
+  },
+});
+
+export const optionChainStrikesListSelector = selector({
+  key: 'optionChainStrikesListSelector',
+  get: ({ get }) => {
+    return Object.entries(get(optionChainStrikesSelector));
   },
 });
 
@@ -301,13 +307,12 @@ export const strikeWiseDataSelector = selector({
     const strikeWisePosition = get(positionState);
     return produce(strikeWisePosition, (draft) => {
       // eslint-disable-next-line no-restricted-syntax
-      for (let symbol in draft) {
+      forEach(draft, (pos, symbol) => {
         const inlineEdit = get(inlineEditsSelector(symbol));
         if (!inlineEdit) {
           return;
         }
-        const { strikeNum, contractType } = processSymbol(inlineEdit.newSymbol);
-        const pos = draft[symbol];
+        const { strikeNum, contractType } = processSymbol(inlineEdit.newSymbol || symbol);
         pos.prevStrike = pos.strike;
         pos.prevQty = pos.posQty;
         pos.strike = `${strikeNum}${contractType}` || pos.strike;
@@ -315,7 +320,7 @@ export const strikeWiseDataSelector = selector({
         pos.posQty = inlineEdit.newQty ?? pos.posQty;
         pos.strikeEdited = pos.strike !== pos.prevStrike;
         pos.qtyEdited = pos.posQty !== pos.prevQty;
-      }
+      });
       return draft;
     });
   },
@@ -327,7 +332,7 @@ export const orderViewSelector = selector({
     const inlineEdits = get(strikeWiseDataSelector);
     const { lotSize } = get(appConstants);
 
-    return produce(inlineEdits, (draft) => {
+    return produce(Object.values(inlineEdits), (draft) => {
       const orderList = {};
       // eslint-disable-next-line no-restricted-syntax
       for (const item of draft) {

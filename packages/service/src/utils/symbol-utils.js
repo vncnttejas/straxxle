@@ -1,5 +1,3 @@
-const { memoize } = require('lodash');
-
 const symbolRegexStr = '^NSE:(NIFTY|BANKNIFTY|FINNIFTY)([0-9]{2}[A-Z0-9]{3})([0-9]{3,6})([A-Z]{2})$';
 const optSymbolRegex = new RegExp(symbolRegexStr);
 
@@ -28,9 +26,9 @@ const getLastThursdayOfMonth = (year, month) => {
   const lastDay = new Date(year, month + 1, 0);
   let lastThursday = new Date(year, month, lastDay.getDate() - lastDay.getDay() + 4);
   if (lastThursday.getMonth() !== month) {
-    lastThursday = new Date(year, month, lastDay.getDate() - lastDay.getDay() - 3);
+    lastThursday = new Date(year, month, lastDay.getDate() - lastDay.getDay() - 2);
   }
-  return lastThursday.getDate();
+  return lastThursday;
 };
 
 const getATMStrikeNumfromCur = (num, symbolObj) => {
@@ -75,7 +73,9 @@ const computeStrikeType = (strikeNum, current, contractType) => {
 };
 
 const prepareSymbolList = (symbolObj, atm) => {
-  const { prefix, strikeDiff, strikeExtreme, expiry } = symbolObj;
+  const {
+    prefix, strikeDiff, strikeExtreme, expiry,
+  } = symbolObj;
   const contractTypes = ['CE', 'PE'];
   const firstStrike = atm - strikeExtreme;
   const lastStrike = atm + strikeExtreme;

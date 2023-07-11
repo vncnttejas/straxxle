@@ -40,7 +40,7 @@ const QtyDD = styled(Autocomplete)(({ contracttype }) => ({
   },
 }));
 
-const TxnButton = ({ orderType, active, ...props }) => {
+const TxnButton = memo(({ orderType, active, ...props }) => {
   const btnName = orderType === 'BUY' ? 'B' : 'S';
   return (
     <Button
@@ -58,7 +58,7 @@ const TxnButton = ({ orderType, active, ...props }) => {
       {btnName}
     </Button>
   );
-};
+});
 
 const TxnWidget = ({
   basket,

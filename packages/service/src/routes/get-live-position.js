@@ -1,4 +1,4 @@
-const { keyBy, memoize } = require('lodash');
+const { keyBy } = require('lodash');
 const { Orders } = require('../models/Orders');
 const {
   computeStrikeWisePnl,
@@ -9,8 +9,6 @@ const {
 const { getApp } = require('../app');
 
 const app = getApp();
-const memoComputeRawPosition = memoize(computeRawPosition);
-const memoSortPositionList = memoize(sortPositionList);
 
 const handler = async (req) => {
   const { startTime, endTime } = req.query;
@@ -23,9 +21,9 @@ const handler = async (req) => {
       },
     });
     if (orders.length) {
-      const positions = memoComputeRawPosition(orders);
+      const positions = computeRawPosition(orders);
       const pnlPosition = computeStrikeWisePnl(positions);
-      const sortedPosition = memoSortPositionList(pnlPosition);
+      const sortedPosition = sortPositionList(pnlPosition);
       const summary = computeSummary(sortedPosition);
       req.log.info('Sending position update');
       app.io.emit('position', {

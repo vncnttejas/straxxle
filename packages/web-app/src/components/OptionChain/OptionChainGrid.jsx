@@ -5,38 +5,12 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { Grid, Paper } from '@mui/material';
-import { useRecoilValue } from 'recoil';
-import './OptionChain.css';
 import NewEntry from './NewEntry';
-import { optionChainStrikesSelector } from '../../utils/state';
 import { OptionChainRow, StrikeCell } from './OptionChainRow';
 import ContractSelect from './ContractSelect';
-import { tapeState } from '../../utils/state';
-import { io } from 'socket.io-client';
-import { useEffect } from 'react';
-import { useSetRecoilState } from 'recoil';
+import './OptionChain.css';
 
-const socket = io('http://developer.vbox');
-
-const OptionChainGrid = () => {
-  const setTape = useSetRecoilState(tapeState);
-  useEffect(() => {
-    const tickUpdate = (data) => {
-      setTape((oc) => {
-        return {
-          ...oc,
-          ...data,
-        };
-      });
-    };
-    socket.on('tick', tickUpdate);
-    return () => {
-      socket.off('tick', tickUpdate);
-    };
-  }, [setTape]);
-  const optionChainStrikes = useRecoilValue(optionChainStrikesSelector);
-  const optionChain = Object.entries(optionChainStrikes);
-
+const OptionChainGrid = ({ optionChain }) => {
   return (
     <Paper sx={{ width: '100%', minHeight: 400 }}>
       <Grid container spacing={2}>

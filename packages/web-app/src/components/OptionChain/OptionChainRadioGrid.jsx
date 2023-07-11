@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
-import { io } from 'socket.io-client';
 import axios from 'axios';
-import { useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
+import { useRecoilValue, useResetRecoilState } from 'recoil';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -11,12 +10,7 @@ import TableRow from '@mui/material/TableRow';
 import { styled } from '@mui/material/styles';
 import { Paper } from '@mui/material';
 import './OptionChain.css';
-import {
-  currentInlineEdit,
-  optionChainSelector,
-  optionChainStrikesSelector,
-  tapeState,
-} from '../../utils/state';
+import { currentInlineEdit, optionChainSelector } from '../../utils/state';
 import { OptionChainRadioRow } from './OptionChainRow';
 import { processSymbol } from '../../utils/order';
 
@@ -25,11 +19,7 @@ export const StrikeCell = styled(TableCell)(() => ({
   paddingBottom: 2,
 }));
 
-
-const socket = io('http://developer.vbox');
-
-const OptionChainRadioGrid = () => {
-  const setTape = useSetRecoilState(tapeState);
+const OptionChainRadioGrid = ({ optionChain }) => {
   const resetOptionChain = useResetRecoilState(optionChainSelector);
   const { symbol } = useRecoilValue(currentInlineEdit);
   useEffect(() => {
@@ -45,23 +35,7 @@ const OptionChainRadioGrid = () => {
       });
       resetOptionChain();
     };
-  }, []);
-  useEffect(() => {
-    const tickUpdate = (data) => {
-      setTape((oc) => {
-        return {
-          ...oc,
-          ...data,
-        };
-      });
-    };
-    socket.on('tick', tickUpdate);
-    return () => {
-      socket.off('tick', tickUpdate);
-    };
-  }, [setTape]);
-  const optionChainStrikes = useRecoilValue(optionChainStrikesSelector);
-  const optionChain = Object.entries(optionChainStrikes);
+  }, [resetOptionChain]);
 
   return (
     <Paper sx={{ width: '100%', minHeight: 400 }}>

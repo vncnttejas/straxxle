@@ -138,6 +138,19 @@ function CustomQtyEditField({ id, value, field }) {
 function PositionTable() {
   const setPositionSummary = useSetRecoilState(positionSummaryState);
   const setPosition = useSetRecoilState(positionState);
+  const strikeData = useRecoilValue(strikeWiseDataSelector);
+  const strikeDataList = Object.values(strikeData);
+  const setOpenModal = useSetRecoilState(optionChainRadioModal);
+  const setCurrentEdit = useSetRecoilState(currentInlineEdit);
+  const setSelection = useSetRecoilState(inlineEditsState);
+  const setConfirmModal = useSetRecoilState(confirmOrderModal);
+  const [rowSelectionModel, setRowSelectionModel] = useRecoilState(
+    posGridRowSelectionState
+  );
+  const { enableOrder, enableDelete, enableClear, enableMove } = useRecoilValue(
+    actionDisplaySelector
+  );
+
   useEffect(() => {
     const positionUpdate = ({ position, summary }) => {
       setPosition(position);
@@ -147,45 +160,33 @@ function PositionTable() {
     return () => {
       socket.off('position', positionUpdate);
     };
-  }, [setPosition, setPositionSummary]);
-  const [rowSelectionModel, setRowSelectionModel] = useRecoilState(
-    posGridRowSelectionState
-  );
-  const { enableOrder, enableDelete, enableClear, enableMove } = useRecoilValue(
-    actionDisplaySelector
-  );
-  const indexedStrikeWiseData = useRecoilValue(strikeWiseDataSelector);
-  const strikeWiseData = Object.values(indexedStrikeWiseData);
-  const setOpenModal = useSetRecoilState(optionChainRadioModal);
-  const setCurrentEdit = useSetRecoilState(currentInlineEdit);
-  const setSelection = useSetRecoilState(inlineEditsState);
-  const setConfirmModal = useSetRecoilState(confirmOrderModal);
+  }, []);
+
   const resetChanges = useCallback(
-    (ids) => {
-      setSelection((prev) => {
-        const data = produce(prev, (draft) => {
-          if (ids.length) {
-            for (const id of ids) {
+    (ids) => () => {
+      ids.forEach((id) => {
+        setSelection((prev) => {
+          return produce(prev, (draft) => {
+            if (ids.length) {
               delete draft[id];
             }
-          }
-          return draft;
+            return draft;
+          });
         });
-        return data;
       });
     },
     [setSelection]
   );
 
   const triggerOrder = useCallback(
-    (symbols) => {
+    (symbols) => () => {
       setConfirmModal({ open: true, symbols });
     },
     [setConfirmModal]
   );
 
   const closePosition = useCallback(
-    (symbols) => {
+    (symbols) => () => {
       setSelection((prev) =>
         produce(prev, (draft) => {
           symbols.forEach((symbol) => {
@@ -199,28 +200,28 @@ function PositionTable() {
     [setConfirmModal, setSelection]
   );
 
-  const getNextStrikeNum = useCallback(
-    (symbols, row, dir) => {
-      setSelection((prev) => {
-        return produce(prev, (draft) => {
-          symbols.forEach((symbol) => {
-            const nextStrike = row?.newSymbol
-              ? getNextStrikeSymbol(row.newSymbol, dir)
-              : getNextStrikeSymbol(row.symbol, dir);
-            set(draft, `${symbol}.newSymbol`, nextStrike);
-            return draft;
-          });
-        });
-      });
-    },
-    [setConfirmModal, setSelection]
-  );
-
   const handleRowSelection = useCallback(
     (newSelection) => {
       setRowSelectionModel(newSelection);
     },
     [setRowSelectionModel]
+  );
+
+  const setNextStrike = useCallback(
+    (symbols, dir) => () => {
+      symbols.forEach((symbol) => {
+        const row = strikeData[symbol];
+        const symToUpdate = row?.newSymbol || symbol;
+        const nextStrike = getNextStrikeSymbol(symToUpdate, dir);
+        setSelection((prev) =>
+          produce(prev, (draft) => {
+            set(draft, `${symbol}.newSymbol`, nextStrike);
+            return draft;
+          })
+        );
+      });
+    },
+    [strikeData, setSelection]
   );
 
   const columns = useMemo(
@@ -276,7 +277,7 @@ function PositionTable() {
               key="RocketLaunchIcon"
               icon={<RocketLaunchIcon />}
               label="Order Now"
-              onClick={() => triggerOrder([id])}
+              onClick={triggerOrder([id])}
             />
           );
           const deleteOrder = (
@@ -284,7 +285,7 @@ function PositionTable() {
               key="RemoveCircleIcon"
               icon={<RemoveCircleIcon />}
               label="Delete Strike"
-              onClick={() => closePosition([id])}
+              onClick={closePosition([id])}
             />
           );
           const resetOrder = (
@@ -292,7 +293,7 @@ function PositionTable() {
               key="BackspaceIcon"
               icon={<BackspaceIcon />}
               label="Clear changes"
-              onClick={() => resetChanges([id])}
+              onClick={resetChanges([id])}
             />
           );
           const increaseStrike = (
@@ -300,7 +301,7 @@ function PositionTable() {
               key="KeyboardArrowUpIcon"
               icon={<KeyboardArrowUpIcon />}
               label="Clear changes"
-              onClick={() => getNextStrikeNum([id], row, 1)}
+              onClick={setNextStrike([id], 1)}
             />
           );
           const decreaseStrike = (
@@ -308,20 +309,20 @@ function PositionTable() {
               key="KeyboardArrowDownIcon"
               icon={<KeyboardArrowDownIcon />}
               label="Clear changes"
-              onClick={() => getNextStrikeNum([id], row, -1)}
+              onClick={setNextStrike([id], -1)}
             />
           );
           let actions = [];
           if (row.strikeEdited || row.qtyEdited) {
-            actions = [orderNow, resetOrder, increaseStrike, decreaseStrike];
+            actions = [increaseStrike, decreaseStrike, orderNow, resetOrder];
           } else if (row.posQty) {
-            actions = [deleteOrder, increaseStrike, decreaseStrike];
+            actions = [increaseStrike, decreaseStrike, deleteOrder];
           }
           return actions;
         },
       },
     ],
-    [closePosition, resetChanges, triggerOrder]
+    [closePosition, resetChanges, triggerOrder, strikeData, setNextStrike]
   );
 
   return (
@@ -336,7 +337,7 @@ function PositionTable() {
           {enableOrder && (
             <Button
               sx={{ px: '10px', minWidth: 'unset' }}
-              onClick={() => triggerOrder()}
+              onClick={triggerOrder()}
             >
               <RocketLaunchIcon />
             </Button>
@@ -344,7 +345,7 @@ function PositionTable() {
           {enableDelete && (
             <Button
               sx={{ px: '10px', minWidth: 'unset' }}
-              onClick={() => closePosition(rowSelectionModel)}
+              onClick={closePosition(rowSelectionModel)}
             >
               <RemoveCircleIcon />
             </Button>
@@ -352,7 +353,7 @@ function PositionTable() {
           {enableClear && (
             <Button
               sx={{ px: '10px', minWidth: 'unset' }}
-              onClick={() => resetChanges(rowSelectionModel)}
+              onClick={resetChanges(rowSelectionModel)}
             >
               <BackspaceIcon />
             </Button>
@@ -361,19 +362,13 @@ function PositionTable() {
             <>
               <Button
                 sx={{ px: '10px', minWidth: 'unset' }}
-                onClick={
-                  () => 1
-                  // getNextStrikeNum(rowSelectionModel, , 1)
-                  // @todo fix enableMove code for the entire file
-                }
+                onClick={setNextStrike(rowSelectionModel, 1)}
               >
                 <KeyboardArrowUpIcon />
               </Button>
               <Button
                 sx={{ px: '10px', minWidth: 'unset' }}
-                onClick={() =>
-                  getNextStrikeNum(rowSelectionModel, strikeWiseData, -1)
-                }
+                onClick={setNextStrike(rowSelectionModel, -1)}
               >
                 <KeyboardArrowDownIcon />
               </Button>
@@ -384,7 +379,7 @@ function PositionTable() {
       <Box sx={{ height: 500, width: '100%' }}>
         <Suspense fallback={<Loading />}>
           <PositionGrid
-            rows={strikeWiseData}
+            rows={strikeDataList}
             columns={columns}
             hideFooter
             paginationModel={{ page: 0, pageSize: 100 }}
