@@ -27,7 +27,7 @@ import {
   positionState,
   positionSummaryState,
 } from '../../utils/state';
-import Loading from '../Loading/Loading';
+import Loading from '../Common/Loading';
 import { set } from 'lodash';
 import { getNextStrikeSymbol } from '../../utils/order';
 

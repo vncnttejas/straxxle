@@ -4,7 +4,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import './styles.css';
 import MainPage from './MainPage';
 import useSWR from 'swr';
-import Loading from '../Loading/Loading';
+import Loading from '../Common/Loading';
 import { Suspense } from 'react';
 
 const theme = createTheme({
