@@ -1,6 +1,12 @@
 import Button from '@mui/material/Button';
-import { styled } from '@mui/material/styles';
-import { Autocomplete, Radio, TableCell, TextField } from '@mui/material';
+import { StyledComponentProps, styled } from '@mui/material/styles';
+import {
+  Autocomplete,
+  AutocompleteProps,
+  Radio,
+  TableCell,
+  TextField,
+} from '@mui/material';
 import { flipOrderType } from '../../utils/order';
 import {
   useRecoilState,
@@ -19,6 +25,11 @@ import {
   optionChainStrikeSelector,
 } from '../../utils/state';
 import { computeQtyOptions } from '../../utils/order';
+import {
+  OptionChainRowProps,
+  TxnButtonProps,
+  TxnWidgetProps,
+} from '../../utils/types';
 
 export const StrikeCell = styled(TableCell)(() => ({
   paddingTop: 2,
@@ -27,20 +38,23 @@ export const StrikeCell = styled(TableCell)(() => ({
 
 const qtyList = computeQtyOptions();
 
-const QtyDD = styled(Autocomplete)(({ contracttype }) => ({
-  width: 70,
-  float: contracttype === 'PE' ? 'left' : 'right',
-  mr: 3,
-  '& .MuiInputBase-sizeSmall': {
-    padding: '0 !important',
-  },
-  '& input.MuiInputBase-input': {
-    textAlign: 'right',
-    paddingRight: '15px !important',
-  },
-}));
+const QtyDD = styled(Autocomplete)(
+  ({ contracttype }: { contracttype: string }) => ({
+    width: 70,
+    float: contracttype === 'PE' ? 'left' : 'right',
+    mr: 3,
+    '& .MuiInputBase-sizeSmall': {
+      padding: '0 !important',
+    },
+    '& input.MuiInputBase-input': {
+      textAlign: 'right',
+      paddingRight: '15px !important',
+    },
+  })
+);
 
-const TxnButton = memo(({ orderType, active, ...props }) => {
+const TxnButton = memo((props: TxnButtonProps) => {
+  const { orderType, active, ...restProps } = props;
   const btnName = orderType === 'BUY' ? 'B' : 'S';
   return (
     <Button
@@ -53,20 +67,16 @@ const TxnButton = memo(({ orderType, active, ...props }) => {
         p: 0,
         minWidth: 25,
       }}
-      {...props}
+      {...restProps}
     >
       {btnName}
     </Button>
   );
 });
 
-const TxnWidget = ({
-  basket,
-  handleOrderClick,
-  contractType,
-  handleQtyChange,
-  disable,
-}) => {
+const TxnWidget = (props: TxnWidgetProps) => {
+  const { basket, handleOrderClick, contractType, handleQtyChange, disable } =
+    props;
   return (
     <>
       <TxnButton
@@ -93,18 +103,17 @@ const TxnWidget = ({
           popupIcon={null}
           clearIcon={null}
           renderInput={(params) => <TextField {...params} />}
-          onChange={(_, newValue) => handleQtyChange(newValue)}
+          onChange={(_, newValue: string) => handleQtyChange(newValue)}
         />
       )}
     </>
   );
 };
 
-export const OptionChainRow = memo(function OptionChainRow({
-  type = 'disabled',
-  symbol = '',
-  contractType,
-}) {
+export const OptionChainRow = memo(function OptionChainRow(
+  props: OptionChainRowProps
+) {
+  const { type = 'disabled', symbol = '', contractType } = props;
   const price = useRecoilValue(optionChainPriceSelector(symbol)) || 0;
   const [basket, setBasket] = useRecoilState(basketStateSelector(symbol));
   const resetBasket = useResetRecoilState(basketStateSelector(symbol));
@@ -137,7 +146,7 @@ export const OptionChainRow = memo(function OptionChainRow({
   );
 
   const handleQtyChange = useCallback(
-    (qty) => {
+    (qty: string) => {
       return setBasket({
         ...basket,
         qty,
@@ -187,11 +196,10 @@ export const OptionChainRow = memo(function OptionChainRow({
   );
 });
 
-export const OptionChainRadioRow = memo(function OptionChainRadioRow({
-  type,
-  symbol,
-  contractType,
-}) {
+export const OptionChainRadioRow = memo(function OptionChainRadioRow(
+  props: OptionChainRowProps
+) {
+  const { type, symbol, contractType } = props;
   const price = useRecoilValue(optionChainPriceSelector(symbol));
   const setOpenModal = useSetRecoilState(optionChainRadioModal);
   const { symbol: editSymbol } = useRecoilValue(currentInlineEdit);

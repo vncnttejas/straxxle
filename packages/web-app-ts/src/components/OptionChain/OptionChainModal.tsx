@@ -23,7 +23,6 @@ export const OptionChainModalFull = () => {
     <Dialog
       open={modalOpen.open}
       onClose={() => setModalOpen((param) => ({ ...param, open: false }))}
-      variant="permanent"
       maxWidth="lg"
       fullWidth={true}
     >
@@ -38,7 +37,6 @@ export const OptionChainRadioModal = () => {
     <Dialog
       open={modalOpen.open}
       onClose={() => setModalOpen({ open: false })}
-      variant="permanent"
       maxWidth="xs"
       fullWidth={true}
     >

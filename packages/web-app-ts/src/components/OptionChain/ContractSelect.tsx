@@ -5,9 +5,14 @@ import axios from 'axios';
 import { useResetRecoilState } from 'recoil';
 import { optionChainSelector } from '../../utils/state';
 
+type ContractType = {
+  symbol: string;
+  shortName: string;
+};
+
 const ContractSelect = memo(() => {
   const { data: indexedContracts } = useSWR('/api/get-contracts');
-  const contracts = Object.values(indexedContracts);
+  const contracts = Object.values(indexedContracts) as ContractType[];
   const [curContract, setCurContract] = useState('NIFTY');
   const resetOptionChain = useResetRecoilState(optionChainSelector);
 
@@ -35,7 +40,7 @@ const ContractSelect = memo(() => {
           value={curContract}
           onChange={(e) => setCurContract(e.target.value)}
         >
-          {contracts.map((contract) => {
+          {contracts.map((contract: ContractType) => {
             return (
               <MenuItem key={contract.symbol} value={contract.shortName}>
                 {contract.shortName}

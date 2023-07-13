@@ -2,7 +2,7 @@ import {
   DefaultValue, atom, atomFamily, selector, selectorFamily,
 } from 'recoil';
 import { produce } from 'immer';
-import { flatten, forEach, intersection, keyBy, orderBy, pick, set as setObject, sortBy } from 'lodash';
+import { flatten, forEach, intersection, keyBy, orderBy, set as setObject } from 'lodash';
 import { processSymbol } from './order';
 
 export const appConstants = atom({
@@ -100,7 +100,7 @@ export const orderListSelector = selector({
   get: ({ get }) => {
     const positions = Object.values(get(positionState));
     let orders = [];
-    positions.forEach(({ expiry, posOrderList }) => {
+    forEach(positions, ({ expiry, posOrderList }) => {
       orders.push(posOrderList.map(order => {
         const prepOrder = {
           id: `${order.tt}:${order.symbol}`,
@@ -179,14 +179,12 @@ export const selectedStrikesSelector = selector({
   get: ({ get }) => {
     const orders = get(selectedStrikesState);
     return produce(orders, (draft) => {
-      // eslint-disable-next-line no-restricted-syntax
-      for (const symbol in draft) {
-        const order = draft[symbol];
+      forEach(draft, (order) => {
         const sign = order.orderType === 'BUY' ? 1 : -1;
         delete order.orderType;
         delete order.contractType;
         order.qty = +order.qty * sign;
-      }
+      });
       return draft;
     });
   },
@@ -388,6 +386,7 @@ export const actionDisplaySelector = selector({
       enableOrder: false,
       enableDelete: false,
       enableClear: false,
+      enableMove: false,
     };
     const selectedLength = positionsSelected.length;
     const inlineEdits = get(inlineEditsState);

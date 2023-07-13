@@ -28,8 +28,11 @@ function NewEntry() {
         severity: 'success',
       });
       resetSelectedStrikes();
-    } catch (e) {
-      const message = `Order creation failed: ${e.message}`;
+    } catch (e: unknown) {
+      let message = 'Order creation failed';
+      if (e instanceof Error) {
+        message = `Order creation failed: ${e.message}`;
+      }
       setNewOrderSnackbar({ open: true, message, severity: 'error' });
     }
   }, [lotSize, resetSelectedStrikes, selectedStrikes, setNewOrderSnackbar]);

@@ -9,6 +9,8 @@ import {
   Grid,
   Snackbar,
   Slide,
+  SlideProps,
+  AlertColor,
 } from '@mui/material';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import { useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
@@ -36,7 +38,7 @@ export const Item = styled(Paper)(({ theme }) => ({
   color: theme.palette.text.secondary,
 }));
 
-const Transition = (props) => <Slide {...props} direction="up" />;
+const Transition = (props: SlideProps) => <Slide {...props} direction="up" />;
 
 function MainPage() {
   useSWR('/api/trigger-ticker-socket');
@@ -95,7 +97,7 @@ function MainPage() {
         TransitionComponent={Transition}
         anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
       >
-        <Alert severity={severity}>{message}</Alert>
+        <Alert severity={severity as AlertColor}>{message}</Alert>
       </Snackbar>
     </Container>
   );
