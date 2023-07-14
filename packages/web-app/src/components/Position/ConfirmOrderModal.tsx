@@ -34,10 +34,13 @@ function ConfirmOrderModal() {
         severity: 'success',
       });
       resetInlineEdits();
-      setRowSelection([]);
+      setRowSelection();
       setModalOpen({ open: false, symbols: [] });
     } catch (e) {
-      const message = `Order creation failed: ${e.message}`;
+      let message = 'Order creation failed';
+      if (e instanceof Error) {
+        message = `Order creation failed: ${e.message}`;
+      }
       setNewOrderSnackbar({ open: true, message, severity: 'error' });
     }
   }, [orderList, resetInlineEdits, setModalOpen, setNewOrderSnackbar]);
@@ -48,7 +51,6 @@ function ConfirmOrderModal() {
       onClose={() => {
         setModalOpen({ open: false });
       }}
-      variant="permanent"
       maxWidth="md"
       fullWidth
     >

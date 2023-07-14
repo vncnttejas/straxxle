@@ -107,7 +107,7 @@ const computeSummary = (pnlPosition) => produce(pnlPosition, (draft) => {
     // `mtm` only computed for OPEN positions
     const mtm = isActive ? accMtm + cur.pnl : accMtm;
     const totalFees = cur.posFees.totalFees + (acc.fees?.totalFees || 0);
-    const exitTotalFees = cur.exitFees.totalFees + (acc.exitFees?.exitTotalFees || 0);
+    const exitTotalFees = cur.exitFees.totalFees + (acc.exitFees?.totalFees || 0);
     const activeOrders = acc.activeOrderCount || 0;
     acc.pnl = pnl;
     acc.mtm = mtm;
@@ -122,7 +122,7 @@ const computeSummary = (pnlPosition) => produce(pnlPosition, (draft) => {
       gst: cur.exitFees.gst + (acc.exitFees?.gst || 0),
       sebi: cur.exitFees.sebi + (acc.exitFees?.sebi || 0),
       stamp: cur.exitFees.stamp + (acc.exitFees?.stamp || 0),
-      exitTotalFees,
+      totalFees: exitTotalFees,
     };
     acc.fees = {
       brokerage: cur.posFees.brokerage + (acc.fees?.brokerage || 0),

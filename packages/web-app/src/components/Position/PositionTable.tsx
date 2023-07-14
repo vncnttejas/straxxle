@@ -2,11 +2,17 @@ import Box from '@mui/material/Box';
 import {
   DataGrid,
   GridActionsCellItem,
+  GridCellParams,
+  GridColDef,
+  GridRenderCellParams,
+  GridRenderEditCellParams,
+  GridRowParams,
+  GridRowSelectionModel,
   useGridApiContext,
 } from '@mui/x-data-grid';
 import { io } from 'socket.io-client';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import { Suspense, useCallback, useEffect, useMemo } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo } from 'react';
 import { Button, TextField, Tooltip, Typography, styled } from '@mui/material';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
@@ -30,6 +36,7 @@ import {
 import Loading from '../Common/Loading';
 import { set } from 'lodash';
 import { getNextStrikeSymbol } from '../../utils/order';
+import { IdType, PositionResponse } from '../../utils/types';
 
 const PositionGrid = styled(DataGrid)(() => ({
   '& .stxl-row-inactive': {
@@ -51,7 +58,8 @@ const PositionGrid = styled(DataGrid)(() => ({
 
 const socket = io('http://developer.vbox');
 
-function CustomQtyField({ id, value, row }) {
+function CustomQtyField(props: GridRenderCellParams): JSX.Element {
+  const { id, value, row } = props;
   const setVal = useSetRecoilState(inlineEditsSelector(id));
   return (
     <>
@@ -77,7 +85,8 @@ function CustomQtyField({ id, value, row }) {
   );
 }
 
-function CustomStrikeField({ id, value, row }) {
+function CustomStrikeField(props: GridRenderCellParams): JSX.Element {
+  const { id, value, row } = props;
   const setVal = useSetRecoilState(inlineEditsSelector(id));
   return (
     <>
@@ -103,22 +112,26 @@ function CustomStrikeField({ id, value, row }) {
   );
 }
 
-function CustomQtyEditField({ id, value, field }) {
+function CustomQtyEditField({
+  id,
+  value,
+  field,
+}: GridRenderEditCellParams): JSX.Element {
   const setInlineEdit = useSetRecoilState(inlineEditsSelector(id));
   const setCurrentEdit = useSetRecoilState(currentInlineEdit);
   const apiRef = useGridApiContext();
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = +e.target.value;
     apiRef.current.setEditCellValue({ id, field, value: newValue });
     setCurrentEdit({ symbol: id });
     setInlineEdit((prev) => ({ ...prev, newQty: newValue }));
   };
 
-  const handleRef = (element) => {
+  const handleRef = (element: HTMLDivElement | null) => {
     if (element) {
       const input = element.querySelector(`input[value="${value}"]`);
-      input?.focus();
+      (input as HTMLElement)?.focus();
     }
   };
 
@@ -135,7 +148,7 @@ function CustomQtyEditField({ id, value, field }) {
   );
 }
 
-function PositionTable() {
+function PositionTable(): JSX.Element {
   const setPositionSummary = useSetRecoilState(positionSummaryState);
   const setPosition = useSetRecoilState(positionState);
   const strikeData = useRecoilValue(strikeWiseDataSelector);
@@ -152,7 +165,7 @@ function PositionTable() {
   );
 
   useEffect(() => {
-    const positionUpdate = ({ position, summary }) => {
+    const positionUpdate = ({ position, summary }: PositionResponse) => {
       setPosition(position);
       setPositionSummary(summary);
     };
@@ -163,7 +176,7 @@ function PositionTable() {
   }, []);
 
   const resetChanges = useCallback(
-    (ids) => () => {
+    (ids: IdType[]) => () => {
       ids.forEach((id) => {
         setSelection((prev) => {
           return produce(prev, (draft) => {
@@ -179,14 +192,14 @@ function PositionTable() {
   );
 
   const triggerOrder = useCallback(
-    (symbols) => () => {
+    (symbols: IdType[]) => () => {
       setConfirmModal({ open: true, symbols });
     },
     [setConfirmModal]
   );
 
   const closePosition = useCallback(
-    (symbols) => () => {
+    (symbols: IdType[]) => () => {
       setSelection((prev) =>
         produce(prev, (draft) => {
           symbols.forEach((symbol) => {
@@ -201,14 +214,14 @@ function PositionTable() {
   );
 
   const handleRowSelection = useCallback(
-    (newSelection) => {
+    (newSelection: IdType[]) => {
       setRowSelectionModel(newSelection);
     },
     [setRowSelectionModel]
   );
 
   const setNextStrike = useCallback(
-    (symbols, dir) => () => {
+    (symbols: IdType[], dir: number) => (): void => {
       symbols.forEach((symbol) => {
         const row = strikeData[symbol];
         const symToUpdate = row?.newSymbol || symbol;
@@ -236,15 +249,21 @@ function PositionTable() {
         headerName: 'Strike',
         width: 100,
         editable: true,
-        renderCell: (params) => <CustomStrikeField {...params} />,
+        renderCell: (params: GridRenderCellParams) => (
+          <CustomStrikeField {...params} />
+        ),
       },
       {
         field: 'posQty',
         headerName: 'Qty (lots)',
         type: 'number',
-        renderEditCell: (params) => <CustomQtyEditField {...params} />,
+        renderEditCell: (params: GridRenderEditCellParams) => (
+          <CustomQtyEditField {...params} />
+        ),
         width: 80,
-        renderCell: (params) => <CustomQtyField {...params} />,
+        renderCell: (params: GridRenderCellParams) => (
+          <CustomQtyField {...params} />
+        ),
         editable: true,
       },
       {
@@ -272,7 +291,7 @@ function PositionTable() {
         width: 200,
         align: 'left',
         cellClassName: 'actions',
-        getActions: ({ id, row }) => {
+        getActions: ({ id, row }: GridRowParams) => {
           const orderNow = (
             <GridActionsCellItem
               key="RocketLaunchIcon"
@@ -313,7 +332,7 @@ function PositionTable() {
               onClick={setNextStrike([id], -1)}
             />
           );
-          let actions = [];
+          let actions: JSX.Element[] = [];
           if (row.strikeEdited || row.qtyEdited) {
             actions = [increaseStrike, decreaseStrike, resetOrder, orderNow];
           } else if (row.posQty) {
@@ -338,7 +357,7 @@ function PositionTable() {
           {enableOrder && (
             <Button
               sx={{ px: '10px', minWidth: 'unset' }}
-              onClick={triggerOrder()}
+              onClick={triggerOrder([])}
             >
               <RocketLaunchIcon />
             </Button>
@@ -381,7 +400,7 @@ function PositionTable() {
         <Suspense fallback={<Loading />}>
           <PositionGrid
             rows={strikeDataList}
-            columns={columns}
+            columns={columns as GridColDef[]}
             hideFooter
             paginationModel={{ page: 0, pageSize: 100 }}
             checkboxSelection
@@ -446,6 +465,7 @@ function PositionTable() {
                 }
                 return classList.join(' ');
               }
+              return '';
             }}
             isRowSelectable={(params) => {
               const { posQty, prevQty } = params.row;

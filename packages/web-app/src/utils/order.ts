@@ -1,4 +1,5 @@
 import { memoize } from 'lodash';
+import { IdType } from './types';
 
 export const freezeQty = 18;
 const symbolRegexStr =
@@ -15,13 +16,16 @@ export const computeQtyOptions = memoize((qty = freezeQty * 5) => {
 });
 
 
-export const flipOrderType = memoize((orderType) => {
+export const flipOrderType = memoize((orderType: string) => {
   return orderType === 'BUY' ? 'SELL' : 'BUY';
 });
 
 export const processSymbol = memoize((symbol) => {
-  const [_, index, rawExpiry, strikeNum, contractType] =
-    optSymbolRegex.exec(symbol);
+  const match = optSymbolRegex.exec(symbol);
+  if (!match) {
+    throw new Error(`Invalid symbol ${symbol}`);
+  }
+  const [_, index, rawExpiry, strikeNum, contractType] = match;
   return {
     index,
     rawExpiry,
@@ -30,7 +34,7 @@ export const processSymbol = memoize((symbol) => {
   };
 });
 
-export const getNextStrikeSymbol = (symbol, step = 1, strikeStep = 50) => {
+export const getNextStrikeSymbol = (symbol: IdType, step = 1, strikeStep = 50) => {
   const { index, rawExpiry, strikeNum, contractType } = processSymbol(symbol);
   const newStrikeNum = parseInt(strikeNum) + step * strikeStep;
   return `NSE:${index}${rawExpiry}${newStrikeNum}${contractType}`;

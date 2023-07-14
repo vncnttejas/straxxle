@@ -1,8 +1,5 @@
 export interface TxnWidgetProps {
-  basket: {
-    qty: string;
-    orderType: string;
-  };
+  basket: IBasketValue;
   contractType: string;
   handleQtyChange: (qty: string) => void;
   handleOrderClick: (e: any) => void;
@@ -16,14 +13,16 @@ export interface TxnButtonProps {
   disabled: boolean;
 };
 
+export type IdType = string | number;
+
 export interface OptionChainRowProps {
   type: string;
-  symbol: string;
+  symbol: IdType;
   contractType: string;
 }
 
 export interface IPosOrderList {
-  symbol: string;
+  symbol: IdType;
   strike: string;
   orderQty: number;
   txnPrice: number;
@@ -42,7 +41,7 @@ export interface IFees {
 };
 
 export interface IPositionValue {
-  symbol: string;
+  symbol: IdType;
   id: string;
   posFees: Fees;
   strike: string;
@@ -55,11 +54,14 @@ export interface IPositionValue {
   lp: number;
   pnl: number;
   exitFees: IFees;
+  prevStrike?: string;
+  prevQty?: number;
+  newSymbol?: IdType;
+  strikeEdited?: boolean;
+  qtyEdited?: boolean;
 };
 
-interface IPosition {
-  [key: string]: IPositionValue;
-};
+export type IPosition = Record<string, IPositionValue>;
 
 export interface IPositionSummary {
   pnl: number;
@@ -72,19 +74,70 @@ export interface IPositionSummary {
   fees: IFees;
 };
 
+export interface PositionResponse {
+  position: IPosition;
+  summary: IPositionSummary;
+};
+
+export type ContractType = 'CE' | 'PE';
+
 export interface IOptionChainValues {
-  symbol: string;
   index: string;
+  symbol: IdType;
   strike: string;
   strikeNum: string;
   strikeType: string;
-  contractType: string;
+  contractType: ContractType;
   expiryType: string;
   expiryDate: string;
   lp: number;
   short_name: string;
 }
 
-export type IOptionChainRow = {
-  [key: string]: IOptionChainValues;
+export interface IOrder {
+  id: string;
+  expiry: string;
+  strike: string;
+  qty: number;
+  txnPrice: number;
+  time: number;
 }
+
+export type IOptionChainRow = Record<IdType, IOptionChainValues>;
+
+export interface IEditRowValue {
+  newSymbol?: IdType;
+  newQty?: number;
+  resetQty?: IdType;
+  resetStrike?: IdType;
+  newStrike?: IdType;
+}
+
+export type InlineEditType = Record<IdType, IEditRowValue>;
+
+export interface IBasketValue {
+  qty: string | number;
+  orderType?: string;
+  contractType?: string;
+}
+
+export type OrderCreateType = 'add' | 'remove';
+
+export interface IOrderValue {
+  symbol: IdType | undefined;
+  qty: number;
+  type: OrderCreateType;
+  expiry: string;
+}
+
+export type IOrderRequest = Record<IdType, IOrderValue[]>;
+
+export type Basket = Record<IdType, IBasketValue>;
+
+export type ConfirmModalType = { open: boolean, symbols?: IdType[] };
+
+export type TrimmedOptionType = Pick<IOptionChainValues, "symbol" | "contractType" | "strike" | "strikeNum" | "strikeType">
+
+export type IndexedStrikeContractType = Record<ContractType, TrimmedOptionType>;
+
+export type IndexedOptionSkeletonType = Record<IdType, IndexedStrikeContractType>

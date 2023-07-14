@@ -14,7 +14,8 @@ function NewEntry() {
   const selectedStrikes = useRecoilValue(selectedStrikesSelector);
   const resetSelectedStrikes = useResetRecoilState(selectedStrikesSelector);
   const createOrder = useCallback(async () => {
-    const orders = Object.entries(selectedStrikes).map(([key, value]) => ({
+    const orderEntries = Object.entries(selectedStrikes);
+    const orders = orderEntries.map(([key, value]) => ({
       ...value,
       qty: +value.qty * lotSize,
       symbol: key,

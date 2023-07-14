@@ -12,8 +12,9 @@ import {
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { openFeesCollapseState, positionSummaryState } from '../../utils/state';
 import { memo } from 'react';
+import { IFees } from '../../utils/types';
 
-const ccyFormat = (num) => {
+const ccyFormat = (num: number) => {
   return num ? `₹ ${num.toFixed(1)}` : 0;
 };
 
@@ -22,7 +23,7 @@ export const SummaryCell = styled(TableCell)(() => ({
   paddingBottom: 5,
 }));
 
-const FeeBreakup = ({ fees }) => {
+const FeeBreakup = ({ fees }: { fees: IFees }) => {
   const collapse = useRecoilValue(openFeesCollapseState);
   return (
     <Collapse in={collapse} timeout="auto" unmountOnExit>
@@ -137,9 +138,9 @@ const Summary = memo(function Summary() {
             <SummaryCell>Exit Fees</SummaryCell>
             <SummaryCell
               align="right"
-              className={exitFees?.exitTotalFees && 'stxl-red'}
+              className={exitFees?.totalFees ? 'stxl-red' : ''}
             >
-              {ccyFormat(0 - exitFees?.exitTotalFees)}
+              {ccyFormat(0 - exitFees?.totalFees)}
             </SummaryCell>
           </TableRow>
           <TableRow
@@ -149,7 +150,7 @@ const Summary = memo(function Summary() {
             <SummaryCell>Fees &raquo;</SummaryCell>
             <SummaryCell
               align="right"
-              className={fees?.totalFees && 'stxl-red'}
+              className={fees?.totalFees ? 'stxl-red' : ''}
             >
               {ccyFormat(0 - fees?.totalFees)}
             </SummaryCell>

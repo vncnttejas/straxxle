@@ -1,9 +1,13 @@
 import {
-  DefaultValue, atom, atomFamily, selector, selectorFamily,
+  DefaultValue, atom, selector, selectorFamily,
 } from 'recoil';
 import { produce } from 'immer';
-import { flatten, forEach, intersection, keyBy, orderBy, set as setObject } from 'lodash';
+import { flatten, forEach, intersection, keyBy, orderBy, pick, set as setObject } from 'lodash';
 import { processSymbol } from './order';
+import {
+  Basket, ConfirmModalType, IOptionChainRow, IOrder, IOrderRequest, IPosition, IPositionSummary, IdType,
+  IndexedOptionSkeletonType, IndexedStrikeContractType, InlineEditType, OrderCreateType,
+} from './types';
 
 export const appConstants = atom({
   key: 'appConstants',
@@ -13,7 +17,7 @@ export const appConstants = atom({
   },
 });
 
-export const tapeState = atom({
+export const tapeState = atom<IOptionChainRow>({
   key: 'tapeState',
   default: {},
 });
@@ -38,7 +42,7 @@ export const optionChainSelector = selector({
 
 export const optionChainPriceSelector = selectorFamily({
   key: 'optionChainPriceSelector',
-  get: (symbol) => ({ get }) => {
+  get: (symbol: IdType) => ({ get }) => {
     const optionChain = get(optionChainSelector);
     return optionChain[symbol]?.lp || 0;
   },
@@ -46,7 +50,7 @@ export const optionChainPriceSelector = selectorFamily({
 
 export const optionChainStrikeSelector = selectorFamily({
   key: 'optionChainStrikeSelector',
-  get: (symbol) => ({ get }) => {
+  get: (symbol: IdType) => ({ get }) => {
     const optionChain = get(optionChainSelector);
     return optionChain[symbol]?.strike;
   },
@@ -75,7 +79,7 @@ export const optionChainRadioModal = atom({
   },
 });
 
-export const confirmOrderModal = atom({
+export const confirmOrderModal = atom<ConfirmModalType>({
   key: 'confirmOrderModal',
   default: {
     open: false,
@@ -90,36 +94,59 @@ export const orderListModal = atom({
   },
 });
 
-export const positionState = atom({
+export const positionState = atom<IPosition>({
   key: 'positionState',
-  default: [],
+  default: {},
 });
 
 export const orderListSelector = selector({
   key: 'orderListSelector',
   get: ({ get }) => {
     const positions = Object.values(get(positionState));
-    let orders = [];
+    const orders: IOrder[][] = [];
     forEach(positions, ({ expiry, posOrderList }) => {
-      orders.push(posOrderList.map(order => {
-        const prepOrder = {
-          id: `${order.tt}:${order.symbol}`,
-          expiry,
-          strike: order.strike,
-          qty: order.orderQty / 50,
-          txnPrice: order.txnPrice,
-          time: order.tt * 1000,
-        };
-        return prepOrder;
-      }));
+      const orderItem = posOrderList.map((order) => ({
+        id: `${order.tt}:${order.symbol}`,
+        expiry,
+        strike: order.strike,
+        qty: order.orderQty / 50,
+        txnPrice: order.txnPrice,
+        time: order.tt * 1000,
+      }))
+      orders.push(orderItem);
     });
     return orderBy(flatten(orders), 'id', 'desc');
   },
 });
 
-export const positionSummaryState = atom({
+export const positionSummaryState = atom<IPositionSummary>({
   key: 'positionSummaryState',
-  default: {}
+  default: {
+    pnl: 0,
+    mtm: 0,
+    total: 0,
+    exitTotal: 0,
+    orderCount: 0,
+    activeOrderCount: 0,
+    exitFees: {
+      brokerage: 0,
+      stt: 0,
+      txnCharges: 0,
+      gst: 0,
+      sebi: 0,
+      stamp: 0,
+      totalFees: 0,
+    },
+    fees: {
+      brokerage: 0,
+      stt: 0,
+      txnCharges: 0,
+      gst: 0,
+      sebi: 0,
+      stamp: 0,
+      totalFees: 0,
+    },
+  }
 });
 
 export const openFeesCollapseState = atom({
@@ -127,16 +154,33 @@ export const openFeesCollapseState = atom({
   default: false,
 });
 
-export const basketState = atomFamily({
+export const basketState = atom<Basket>({
   key: 'basket',
-  default: {
-    orderType: '',
-    qty: '0',
-    contractType: '',
+  default: {},
+});
+
+export const basketSelector = selectorFamily({
+  key: 'basketSelector',
+  get: (id: IdType) => ({ get }) => {
+    const basket = get(basketState);
+    return basket[id];
+  },
+  set: (id: IdType) => ({ set }, newValue) => {
+    if (newValue instanceof DefaultValue) {
+      set(basketState, (prev) => produce(prev, (draft) => {
+        delete draft[id];
+        return draft;
+      }));
+      return;
+    }
+    set(basketState, (prev) => produce(prev, (draft) => {
+      draft[id] = newValue;
+      return draft;
+    }));
   },
 });
 
-export const selectedStrikesState = atom({
+export const selectedStrikesState = atom<Basket>({
   key: 'selectedStrikes',
   default: {},
 });
@@ -151,21 +195,21 @@ export const newOrderSnackbarState = atom({
 });
 
 export const basketStateSelector = selectorFamily({
-  key: 'selectedStrikes',
-  get: (id) => ({ get }) => get(basketState(id)),
-  set: (id) => ({ set, reset }, newValue) => {
+  key: 'basketStateSelector',
+  get: (id: IdType) => ({ get }) => get(basketSelector(id)),
+  set: (id: IdType) => ({ set, reset }, newValue) => {
     if (!id) return;
     if (!newValue) return;
     if (newValue instanceof DefaultValue) {
-      reset(basketState(id));
+      reset(basketSelector(id));
       set(selectedStrikesState, (prev) => produce(prev, (draft) => {
         delete draft[id];
         return draft;
       }));
       return;
     }
-    if (newValue.qty.length) {
-      set(basketState(id), newValue);
+    if (+newValue.qty) {
+      set(basketSelector(id), newValue);
       set(selectedStrikesState, (prev) => produce(prev, (draft) => {
         draft[id] = newValue;
         return draft;
@@ -191,9 +235,9 @@ export const selectedStrikesSelector = selector({
   set: ({ get, set, reset }, newValue) => {
     if (newValue instanceof DefaultValue) {
       const selectedStriles = get(selectedStrikesState);
-      for (const key in selectedStriles) {
-        reset(basketState(key));
-      }
+      forEach(selectedStriles, (_val, key) => {
+        reset(basketSelector(key));
+      });
       set(optionChainModalState, {
         ...get(optionChainModalState),
         open: false,
@@ -207,66 +251,56 @@ export const trimmedOptionFields = selector({
   key: 'trimmedOptionFields',
   get: ({ get }) => {
     const optionChain = get(optionChainSelector);
-    return produce(optionChain, (draft) => {
-      for (const option in draft) {
-        const optionData = draft[option];
-        delete optionData?.lp;
-        delete optionData?.strikeDiffPts;
-        delete optionData?.strikeDiff;
-        delete optionData?.expiryType;
-        delete optionData?.expiryDate;
-      }
+    const prepList = {};
+    forEach(optionChain, (strike) => {
+      const trimmedData = pick(strike, ['symbol', 'strike', 'contractType', 'strikeNum', 'strikeType']);
+      const { contractType, strikeNum } = trimmedData;
+      setObject<IndexedOptionSkeletonType>(prepList, `${strikeNum}.${contractType}`, trimmedData);
     });
+    return prepList;
   },
 });
 
-export const optionChainStrikesSelector = selector({
-  key: 'optionChainStrikesSelector',
-  get: ({ get }) => {
-    const trimmedOptionData = get(trimmedOptionFields);
-    return produce(trimmedOptionData, (draft) => {
-      const prepList = {};
-      forEach(draft, (optionData) => {
-        const { contractType } = optionData;
-        const { strikeNum } = optionData;
-        setObject(prepList, `${strikeNum}.${contractType}`, optionData);
-      });
-      return prepList;
-    });
-  },
-});
-
-export const optionChainStrikesListSelector = selector({
+export const optionChainStrikesListSelector = selector<[IdType, IndexedStrikeContractType][]>({
   key: 'optionChainStrikesListSelector',
   get: ({ get }) => {
-    return Object.entries(get(optionChainStrikesSelector));
+    return Object.entries(get(trimmedOptionFields));
   },
 });
 
-export const currentInlineEdit = atom({
+export const currentInlineEdit = atom<{ symbol: IdType }>({
   key: 'currentInlineEdit',
   default: {
     symbol: '',
   },
 });
 
-export const inlineEditsState = atom({
+export const inlineEditsState = atom<InlineEditType>({
   key: 'inlineEdits',
   default: {},
 });
 
 export const inlineEditsSelector = selectorFamily({
   key: 'inlineEditsSelector',
-  get: (symbol) => ({ get }) => {
+  get: (symbol: IdType) => ({ get }) => {
     const inlineEdit = get(inlineEditsState);
     return inlineEdit[symbol];
   },
-  set: (symbol) => ({ get, set }, newValue) => {
+  set: (symbol: IdType) => ({ get, set }, newValue) => {
     const inlineEdits = get(inlineEditsState);
-    let id;
+    let id: IdType;
 
-    id = newValue?.resetQty;
-    if (id) {
+    if (newValue instanceof DefaultValue) {
+      const updatedEdits = produce(inlineEdits, (draft) => {
+        delete draft[symbol];
+        return draft;
+      });
+      set(inlineEditsState, updatedEdits);
+      return;
+    }
+
+    if (newValue?.resetQty) {
+      id = newValue?.resetQty;
       const updatedEdits = produce(inlineEdits, (draft) => {
         delete draft[id].newQty;
         if (!draft[id].newSymbol) {
@@ -278,8 +312,8 @@ export const inlineEditsSelector = selectorFamily({
       return;
     }
 
-    id = newValue?.resetStrike;
-    if (id) {
+    if (newValue?.resetStrike) {
+      id = newValue?.resetStrike;
       const updatedEdits = produce(inlineEdits, (draft) => {
         delete draft[id].newSymbol;
         if (!draft[id].newQty) {
@@ -304,7 +338,6 @@ export const strikeWiseDataSelector = selector({
   get: ({ get }) => {
     const strikeWisePosition = get(positionState);
     return produce(strikeWisePosition, (draft) => {
-      // eslint-disable-next-line no-restricted-syntax
       forEach(draft, (pos, symbol) => {
         const inlineEdit = get(inlineEditsSelector(symbol));
         if (!inlineEdit) {
@@ -329,51 +362,50 @@ export const orderViewSelector = selector({
   get: ({ get }) => {
     const inlineEdits = get(strikeWiseDataSelector);
     const { lotSize } = get(appConstants);
-
-    return produce(Object.values(inlineEdits), (draft) => {
-      const orderList = {};
-      // eslint-disable-next-line no-restricted-syntax
-      for (const item of draft) {
-        const inineEditData = get(inlineEditsSelector(item.symbol));
-        if (!inineEditData) {
-          // eslint-disable-next-line no-continue
-          continue;
-        }
-
-        let list;
-        if (item.strikeEdited) {
-          list = [
-            {
-              symbol: item.id,
-              qty: (0 - item.prevQty) * lotSize,
-              expiry: item.expiry,
-              type: 'remove',
-            },
-            {
-              symbol: item.newSymbol,
-              qty: item.posQty * lotSize,
-              expiry: item.expiry,
-              type: 'add',
-            },
-          ];
-        } else {
-          list = [
-            {
-              symbol: item.symbol,
-              qty: (item.posQty - item.prevQty) * lotSize,
-              expiry: item.expiry,
-              type: 'add',
-            },
-          ];
-        }
-        orderList[item.id] = list;
+    const positionList = Object.values(inlineEdits);
+    const orderList: IOrderRequest = {};
+    forEach(positionList, (item) => {
+      const inineEditData = get(inlineEditsSelector(item.symbol));
+      if (!inineEditData) {
+        return;
       }
-      return orderList;
+
+      let list;
+      if (!item.prevQty) {
+        return;
+      }
+      if (item.strikeEdited) {
+        list = [
+          {
+            symbol: item.id,
+            qty: (0 - item.prevQty) * lotSize,
+            expiry: item.expiry,
+            type: 'remove' as OrderCreateType,
+          },
+          {
+            symbol: item.newSymbol,
+            qty: item.posQty * lotSize,
+            expiry: item.expiry,
+            type: 'add' as OrderCreateType,
+          },
+        ];
+      } else {
+        list = [
+          {
+            symbol: item.symbol,
+            qty: (item.posQty - item.prevQty) * lotSize,
+            expiry: item.expiry,
+            type: 'add' as OrderCreateType,
+          },
+        ];
+      }
+      orderList[item.id] = list;
     });
+    return orderList;
   },
 });
 
-export const posGridRowSelectionState = atom({
+export const posGridRowSelectionState = atom<IdType[]>({
   key: 'posGridRowSelectionState',
   default: [],
 });

@@ -11,7 +11,6 @@ function OrderListModal() {
       onClose={() => {
         setModalOpen({ open: false });
       }}
-      variant="permanent"
       maxWidth="lg"
       fullWidth
     >

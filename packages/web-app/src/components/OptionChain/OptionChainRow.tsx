@@ -1,12 +1,6 @@
 import Button from '@mui/material/Button';
-import { StyledComponentProps, styled } from '@mui/material/styles';
-import {
-  Autocomplete,
-  AutocompleteProps,
-  Radio,
-  TableCell,
-  TextField,
-} from '@mui/material';
+import { styled } from '@mui/material/styles';
+import { Autocomplete, Radio, TableCell, TextField } from '@mui/material';
 import { flipOrderType } from '../../utils/order';
 import {
   useRecoilState,
@@ -14,7 +8,7 @@ import {
   useResetRecoilState,
   useSetRecoilState,
 } from 'recoil';
-import { memo, useCallback, useEffect } from 'react';
+import React, { memo, useCallback, useEffect } from 'react';
 import './OptionChain.css';
 import {
   basketStateSelector,
@@ -53,67 +47,73 @@ const QtyDD = styled(Autocomplete)(
   })
 );
 
-const TxnButton = memo((props: TxnButtonProps) => {
-  const { orderType, active, ...restProps } = props;
-  const btnName = orderType === 'BUY' ? 'B' : 'S';
-  return (
-    <Button
-      variant={active ? 'contained' : 'outlined'}
-      color={orderType === 'BUY' ? 'success' : 'error'}
-      size="small"
-      data-order-type={orderType}
-      sx={{
-        mr: orderType === 'SELL' ? 0 : 2,
-        p: 0,
-        minWidth: 25,
-      }}
-      {...restProps}
-    >
-      {btnName}
-    </Button>
-  );
-});
+const TxnButton = memo(
+  ({ orderType, active, ...restProps }: TxnButtonProps) => {
+    const btnName = orderType === 'BUY' ? 'B' : 'S';
+    return (
+      <Button
+        variant={active ? 'contained' : 'outlined'}
+        color={orderType === 'BUY' ? 'success' : 'error'}
+        size="small"
+        data-order-type={orderType}
+        sx={{
+          mr: orderType === 'SELL' ? 0 : 2,
+          p: 0,
+          minWidth: 25,
+        }}
+        {...restProps}
+      >
+        {btnName}
+      </Button>
+    );
+  }
+);
 
-const TxnWidget = (props: TxnWidgetProps) => {
-  const { basket, handleOrderClick, contractType, handleQtyChange, disable } =
-    props;
+const TxnWidget = ({
+  basket,
+  handleOrderClick,
+  contractType,
+  handleQtyChange,
+  disable,
+}: TxnWidgetProps) => {
   return (
     <>
       <TxnButton
         orderType="BUY"
-        active={basket['orderType'] === 'BUY'}
+        active={basket?.orderType === 'BUY'}
         onClick={handleOrderClick}
         disabled={disable}
       />
       <TxnButton
         orderType="SELL"
-        active={basket['orderType'] === 'SELL'}
+        active={basket?.orderType === 'SELL'}
         onClick={handleOrderClick}
         disabled={disable}
       />
       <br />
-      {basket['qty'] !== '0' && (
+      {basket?.qty && (
         <QtyDD
           contracttype={contractType}
           autoHighlight
           autoSelect
           size="small"
-          value={basket['qty']}
+          value={basket?.qty}
           options={qtyList}
           popupIcon={null}
           clearIcon={null}
           renderInput={(params) => <TextField {...params} />}
-          onChange={(_, newValue: string) => handleQtyChange(newValue)}
+          onChange={(_event, newValue) => handleQtyChange(newValue as string)}
         />
       )}
     </>
   );
 };
 
-export const OptionChainRow = memo(function OptionChainRow(
-  props: OptionChainRowProps
-) {
-  const { type = 'disabled', symbol = '', contractType } = props;
+export const OptionChainRow = memo(function OptionChainRow({
+  type = 'disabled',
+  symbol = '',
+  contractType,
+}: OptionChainRowProps) {
   const price = useRecoilValue(optionChainPriceSelector(symbol)) || 0;
   const [basket, setBasket] = useRecoilState(basketStateSelector(symbol));
   const resetBasket = useResetRecoilState(basketStateSelector(symbol));
@@ -124,21 +124,25 @@ export const OptionChainRow = memo(function OptionChainRow(
   }, [resetBasket]);
 
   const handleOrderClick = useCallback(
-    (e) => {
-      if (basket['qty'] === '0') {
+    (e: React.SyntheticEvent) => {
+      if (!(e.target instanceof HTMLButtonElement)) {
+        return;
+      }
+      if (!basket?.qty) {
         setBasket({
           qty: '1',
           contractType,
-          orderType: e.target.dataset.orderType,
+          orderType: e.target.dataset?.orderType as string,
         });
-      } else if (basket['orderType'] === e.target.dataset.orderType) {
+      } else if (basket.orderType === e.target.dataset.orderType) {
         resetBasket();
       } else if (
-        basket['orderType'] === flipOrderType(e.target.dataset.orderType)
+        typeof e.target.dataset?.orderType === 'string' &&
+        basket.orderType === flipOrderType(e.target.dataset?.orderType)
       ) {
         setBasket({
           ...basket,
-          orderType: e.target.dataset.orderType,
+          orderType: e.target.dataset?.orderType as string,
         });
       }
     },
@@ -196,10 +200,11 @@ export const OptionChainRow = memo(function OptionChainRow(
   );
 });
 
-export const OptionChainRadioRow = memo(function OptionChainRadioRow(
-  props: OptionChainRowProps
-) {
-  const { type, symbol, contractType } = props;
+export const OptionChainRadioRow = memo(function OptionChainRadioRow({
+  type,
+  symbol,
+  contractType,
+}: OptionChainRowProps) {
   const price = useRecoilValue(optionChainPriceSelector(symbol));
   const setOpenModal = useSetRecoilState(optionChainRadioModal);
   const { symbol: editSymbol } = useRecoilValue(currentInlineEdit);
@@ -208,11 +213,11 @@ export const OptionChainRadioRow = memo(function OptionChainRadioRow(
   );
   const inlineEditStrike = useRecoilValue(optionChainStrikeSelector(symbol));
   const handleSelection = useCallback(
-    (e) => {
+    (e: React.SyntheticEvent<HTMLInputElement>) => {
       setOpenModal({ open: false });
       setSelection((prev) => ({
         ...prev,
-        newSymbol: e.target.value,
+        newSymbol: (e.target as HTMLInputElement).value,
       }));
     },
     [inlineEditStrike, setOpenModal, setSelection]
@@ -230,7 +235,7 @@ export const OptionChainRadioRow = memo(function OptionChainRadioRow(
           onChange={handleSelection}
           value={symbol}
           name="strike"
-          inputProps={{ 'aria-label': symbol }}
+          inputProps={{ 'aria-label': symbol as string }}
           sx={{ p: 0 }}
           disabled={editSymbol === symbol}
         />
@@ -254,7 +259,7 @@ export const OptionChainRadioRow = memo(function OptionChainRadioRow(
           onChange={handleSelection}
           value={symbol}
           name="strike"
-          inputProps={{ 'aria-label': symbol }}
+          inputProps={{ 'aria-label': symbol as string }}
           sx={{ p: 0 }}
           disabled={editSymbol === symbol}
         />

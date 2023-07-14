@@ -1,9 +1,10 @@
 import Box from '@mui/material/Box';
-import { DataGrid } from '@mui/x-data-grid';
+import { DataGrid, GridValueGetterParams } from '@mui/x-data-grid';
 import { useRecoilValue } from 'recoil';
 import Loading from '../Common/Loading';
 import { orderListSelector } from '../../utils/state';
 import { Suspense, useMemo } from 'react';
+import { getReadableDate } from '../../utils/date';
 
 function OrdersTable() {
   const orderList = useRecoilValue(orderListSelector);
@@ -14,15 +15,8 @@ function OrdersTable() {
         headerName: 'Order Time',
         type: 'string',
         width: 200,
-        valueGetter: (params) => {
-          const date = new Date(params.row.time);
-          const dateString = date.toLocaleDateString('en-GB', {
-            day: 'numeric',
-            month: 'long',
-          });
-          const timeString = date.toLocaleTimeString('en-IN');
-          return `${dateString}, ${timeString}`;
-        },
+        valueGetter: (params: GridValueGetterParams) =>
+          getReadableDate(params.row.time),
       },
       {
         field: 'expiry',
