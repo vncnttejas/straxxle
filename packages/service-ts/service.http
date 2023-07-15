@@ -1,0 +1,7 @@
+@baseUrl = http://localhost:3000
+
+### Ping
+GET {{baseUrl}}/ping
+
+### Get All Orders
+GET {{baseUrl}}/orders
