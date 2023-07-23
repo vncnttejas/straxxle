@@ -1,6 +1,6 @@
 import { OrderFees } from 'src/app/orders/types/order-fees.type';
-import { Position } from './position.type';
 import { OrderDetails } from 'src/app/orders/types/order-details';
+import { Position } from './position.type';
 
 export interface PositionWithPnl extends Position {
   lp: number;

@@ -1,17 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { produce } from 'immer';
-import _ from 'lodash';
+import _, { keyBy, set } from 'lodash';
 import { OrdersService } from '../orders/orders.service';
 import { CommonService } from '../common/common.service';
 import { PositionSummary } from './types/position-summary.type';
-import { Position } from './types';
 import { Order } from '../orders/entities/order.entity';
-import { StrikewisePosition } from './types/strike-wise-position';
+import { StrikewisePosition } from './types/strike-wise-position.type';
 import { ConfigService } from '@nestjs/config';
 import { TapeService } from '../tape/tape.service';
 import { EnrichedOptiontick, OptionRecordType } from '../types';
-import { PositionWithPnl } from './types/position-with-pnl';
-import { IndexedPosition } from './types/indexed-position';
+import { PositionWithPnl } from './types/position-with-pnl.type';
+import { IndexedPosition } from './types/indexed-position.type';
+import { ComputePositionReqDto } from './dtos';
+import { PositionWithSummary } from './types';
 
 @Injectable()
 export class PositionsService {
@@ -50,7 +51,7 @@ export class PositionsService {
 
       if (!finalPos[symbol]?.symbol) {
         const exp = new Date(expiryDate);
-        _.set(finalPos, `${symbol}.symbol`, symbol);
+        set(finalPos, `${symbol}.symbol`, symbol);
         const month = this.commonService.monthMap[exp.getMonth()];
         const dateWithSup = this.commonService.addSup(exp.getDate());
         finalPos[symbol].id = symbol;
@@ -196,5 +197,18 @@ export class PositionsService {
         limitPrice: posAvg,
       };
     });
+  }
+
+  async computePosition(query: ComputePositionReqDto): Promise<PositionWithSummary> {
+    const { startTime, endTime } = query;
+    const filteredOrders = await this.orderService.getOrders(startTime, endTime);
+    const position = this.computeRawPosition(filteredOrders);
+    const pnlPosition = this.computeStrikeWisePnl(position as unknown as IndexedPosition);
+    const sortedPosition = this.sortPositionList(pnlPosition);
+    const summary = this.computePositionSummary(sortedPosition);
+    return {
+      position: keyBy(sortedPosition, 'symbol'),
+      summary,
+    };
   }
 }

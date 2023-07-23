@@ -14,14 +14,10 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
-      '/socket.io': {
-        target: 'ws://localhost:3030',
-        ws: true,
-      },
     },
   },
   preview: {
     host: '0.0.0.0',
     port: 80,
   },
-})
+});

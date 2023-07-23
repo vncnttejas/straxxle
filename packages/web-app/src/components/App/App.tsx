@@ -22,9 +22,9 @@ const routes = [
 ];
 
 const App = () => {
-  const { data, isLoading } = useSWR('/api/auth');
+  const { data, isLoading } = useSWR('/api/token');
   if (!isLoading && !data.accessToken) {
-    window.location.href = 'http://localhost:3030/fyers-login';
+    window.location.href = 'http://localhost:3030/token/generate';
   }
 
   return (

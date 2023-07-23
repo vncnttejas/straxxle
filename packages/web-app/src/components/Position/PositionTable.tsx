@@ -2,12 +2,10 @@ import Box from '@mui/material/Box';
 import {
   DataGrid,
   GridActionsCellItem,
-  GridCellParams,
   GridColDef,
   GridRenderCellParams,
   GridRenderEditCellParams,
   GridRowParams,
-  GridRowSelectionModel,
   useGridApiContext,
 } from '@mui/x-data-grid';
 import { io } from 'socket.io-client';

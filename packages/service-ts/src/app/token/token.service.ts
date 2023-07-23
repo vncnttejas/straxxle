@@ -12,17 +12,26 @@ export class TokenService {
 
   constructor(private readonly configService: ConfigService) {}
 
-  async initFyersLib(queryParams: FyersResponseParamsDto) {
+  get accessTokenValue(): string {
+    if (!this.accessToken) {
+      throw new Error('Token unavailable');
+    }
+    return this.accessToken;
+  }
+
+  async saveFyersCred(queryParams: FyersResponseParamsDto): Promise<void> {
     const { clientId, appSecret, redirectUri } = this.configService.get('broker');
     const fyersCred = (await fyersApiV2.generate_access_token({
       client_id: clientId,
       secret_key: appSecret,
       ...queryParams,
     })) as ExtractedFyersCred;
-
     this.appId = clientId;
     this.redirectUri = redirectUri;
     this.accessToken = fyersCred.access_token;
+  }
+
+  initFyersLib(): void {
     fyersApiV2.setAppId(this.appId);
     fyersApiV2.setRedirectUrl(this.redirectUri);
     fyersApiV2.setAccessToken(this.accessToken);

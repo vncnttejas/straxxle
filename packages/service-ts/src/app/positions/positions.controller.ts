@@ -1,27 +1,24 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Sse } from '@nestjs/common';
 import { PositionsService } from './positions.service';
-import { keyBy } from 'lodash';
-import { OrdersService } from '../orders/orders.service';
 import { ComputePositionReqDto } from './dtos/compute-pos-req.dto';
-import { IndexedPosition } from './types/indexed-position';
+import { Observable, interval, map } from 'rxjs';
+import { PositionWithSummary } from './types';
 
 @Controller('position')
 export class PositionsController {
-  constructor(private orderService: OrdersService, private positionService: PositionsService) {}
+  constructor(private positionService: PositionsService) {}
 
   @Get()
-  async computePositions(@Query() query: ComputePositionReqDto) {
-    const { startTime, endTime } = query;
-    const filteredOrders = await this.orderService.getOrders(startTime, endTime);
-    const position = this.positionService.computeRawPosition(filteredOrders);
-    const pnlPosition = this.positionService.computeStrikeWisePnl(position as unknown as IndexedPosition);
-    const sortedPosition = this.positionService.sortPositionList(pnlPosition);
-    const summary = this.positionService.computePositionSummary(sortedPosition);
+  async computePositions(@Query() query: ComputePositionReqDto): Promise<PositionWithSummary> {
+    return this.positionService.computePosition(query);
+  }
 
-    return {
-      live: true,
-      position: keyBy(sortedPosition, 'symbol'),
-      summary,
-    };
+  @Sse('live')
+  getLivePositions(@Query() query: ComputePositionReqDto): Observable<Promise<PositionWithSummary>> {
+    return interval(3000).pipe(
+      map((_) => {
+        return this.positionService.computePosition(query);
+      }),
+    );
   }
 }

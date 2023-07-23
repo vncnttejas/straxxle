@@ -7,12 +7,12 @@ import { TokenModule } from './token/token.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AppService } from './app.service';
-import { MktService } from './mkt/mkt.service';
 import { PositionsModule } from './positions/positions.module';
 import { CommonService } from './common/common.service';
 import { TagsModule } from './tags/tags.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TapeService } from './tape/tape.service';
+import { TapeModule } from './tape/tape.module';
 
 @Module({
   imports: [
@@ -32,8 +32,9 @@ import { TapeService } from './tape/tape.service';
     OrdersModule,
     PositionsModule,
     TagsModule,
+    TapeModule,
   ],
   controllers: [AppController],
-  providers: [AppService, MktService, CommonService, TapeService],
+  providers: [AppService, CommonService, TapeService],
 })
 export class AppModule {}

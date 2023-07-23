@@ -1,9 +1,12 @@
-import { IsString } from 'class-validator';
+import { IsDate } from 'class-validator';
+
+const defaultStartTime = new Date(new Date().setHours(0, 0, 0, 0));
+const defaultEndTime = new Date(new Date().setHours(23, 59, 59, 999));
 
 export class ComputePositionReqDto {
-  @IsString()
-  startTime: Date;
+  @IsDate()
+  startTime: Date = defaultStartTime;
 
-  @IsString()
-  endTime: Date;
+  @IsDate()
+  endTime: Date = defaultEndTime;
 }

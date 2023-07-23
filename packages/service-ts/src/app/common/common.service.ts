@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SymbolData } from '../types/symbol-data.type';
+const fyersApiV2 = require('fyers-api-v2');
 
 @Injectable()
 export class CommonService {
@@ -40,7 +41,7 @@ export class CommonService {
     D: 12,
   };
 
-  constructor(private configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) {}
 
   addSup(num: number): string {
     const val = (num - 1) % 10;
@@ -118,5 +119,11 @@ export class CommonService {
       expiryType: 'monthly',
       expiryDate: this.getLastThursdayOfMonth(+`20${year}`, this.monthMap[month]),
     };
+  }
+
+  async fetchSymbolData(symbol: string): Promise<number> {
+    const quotes = new fyersApiV2.quotes();
+    const current = await quotes.setSymbol(symbol).getQuotes();
+    return current.d[0].v.lp;
   }
 }
