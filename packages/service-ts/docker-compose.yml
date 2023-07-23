@@ -1,0 +1,15 @@
+version: '3.1'
+services:
+  pg:
+    image: postgres:15.3-alpine3.18
+    restart: always
+    environment:
+      POSTGRES_DB: stxl_db
+      POSTGRES_USER: stxl_user
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/posgresql
+volumes:
+  pgdata:
