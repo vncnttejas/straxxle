@@ -6,13 +6,11 @@ import { OrdersModule } from './orders/orders.module';
 import { TokenModule } from './token/token.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { AppService } from './app.service';
 import { PositionsModule } from './positions/positions.module';
-import { CommonService } from './common/common.service';
 import { TagsModule } from './tags/tags.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { TapeService } from './tape/tape.service';
 import { TapeModule } from './tape/tape.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -29,12 +27,12 @@ import { TapeModule } from './tape/tape.module';
     }),
     EventEmitterModule.forRoot(),
     TokenModule,
+    TapeModule,
     OrdersModule,
     PositionsModule,
     TagsModule,
-    TapeModule,
+    CommonModule,
   ],
   controllers: [AppController],
-  providers: [AppService, CommonService, TapeService],
 })
 export class AppModule {}

@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) {}
 
   @Get()
   getOrders(): string {

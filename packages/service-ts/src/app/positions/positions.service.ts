@@ -2,25 +2,24 @@ import { Injectable } from '@nestjs/common';
 import { produce } from 'immer';
 import _, { keyBy, set } from 'lodash';
 import { OrdersService } from '../orders/orders.service';
-import { CommonService } from '../common/common.service';
 import { PositionSummary } from './types/position-summary.type';
 import { Order } from '../orders/entities/order.entity';
 import { StrikewisePosition } from './types/strike-wise-position.type';
 import { ConfigService } from '@nestjs/config';
 import { TapeService } from '../tape/tape.service';
-import { EnrichedOptiontick, OptionRecordType } from '../types';
 import { PositionWithPnl } from './types/position-with-pnl.type';
 import { IndexedPosition } from './types/indexed-position.type';
 import { ComputePositionReqDto } from './dtos';
 import { PositionWithSummary } from './types';
+import { CommonService } from '../common/common.service';
 
 @Injectable()
 export class PositionsService {
   constructor(
-    private orderService: OrdersService,
+    private readonly configService: ConfigService,
     private commonService: CommonService,
-    private configService: ConfigService,
     private tapeService: TapeService,
+    private orderService: OrdersService,
   ) {}
 
   private defaultExitFees = {
@@ -106,9 +105,10 @@ export class PositionsService {
   computeStrikeWisePnl(positions: IndexedPosition): PositionWithPnl[] {
     const lotSize = this.configService.get<number>('lotSize');
     return produce(Object.values(positions), (draft) => {
-      draft.forEach((position) => {
+      draft.forEach(async (position) => {
         const { posQty, posAvg, posVal, symbol } = position;
-        const strike = this.tapeService.getTape((tape: OptionRecordType) => tape[symbol]) as EnrichedOptiontick;
+        const strikeData = this.tapeService.getStrikeData(symbol);
+        const strike = await this.tapeService.enrichOptionStrikeData(strikeData);
         const lp = strike?.lp || 0;
         const pnl = posQty ? (lp - posAvg) * posQty : 0 - posVal;
         position.lp = lp;

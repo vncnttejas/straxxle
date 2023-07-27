@@ -14,7 +14,6 @@ import {
 } from '@mui/material';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import { useRecoilValue, useResetRecoilState, useSetRecoilState } from 'recoil';
-import useSWR from 'swr';
 import {
   OptionChainModalFull,
   OptionChainRadioModal,
@@ -41,9 +40,6 @@ export const Item = styled(Paper)(({ theme }) => ({
 const Transition = (props: SlideProps) => <Slide {...props} direction="up" />;
 
 function MainPage() {
-  useSWR('/api/trigger-ticker-socket');
-  useSWR('/api/trigger-position-socket');
-
   const { open: openConfirmModal } = useRecoilValue(confirmOrderModal);
   const { open: openRadioModal } = useRecoilValue(optionChainRadioModal);
   const { open: openChainModal } = useRecoilValue(optionChainModalState);

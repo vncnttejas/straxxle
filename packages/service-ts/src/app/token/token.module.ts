@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
-import { TokenService } from './token.service';
 import { TokenController } from './token.controller';
-import { TapeService } from '../tape/tape.service';
-import { CommonService } from '../common/common.service';
+import { TokenService } from './token.service';
+import { CommonModule } from '../common/common.module';
+import { TapeModule } from '../tape/tape.module';
 
 @Module({
-  providers: [TokenService, TapeService, CommonService],
+  imports: [CommonModule, TapeModule],
   controllers: [TokenController],
+  providers: [TokenService],
 })
 export class TokenModule {}

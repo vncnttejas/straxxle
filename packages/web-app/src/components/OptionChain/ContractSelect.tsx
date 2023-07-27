@@ -1,9 +1,8 @@
 import { Box, FormControl, InputLabel, MenuItem, Select } from '@mui/material';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect } from 'react';
 import useSWR from 'swr';
-import axios from 'axios';
-import { useResetRecoilState } from 'recoil';
-import { optionChainSelector } from '../../utils/state';
+import { useRecoilState, useResetRecoilState } from 'recoil';
+import { optionChainContract, optionChainSelector } from '../../utils/state';
 
 type ContractType = {
   symbol: string;
@@ -11,21 +10,15 @@ type ContractType = {
 };
 
 const ContractSelect = memo(() => {
-  const { data: indexedContracts } = useSWR('/api/get-contracts');
+  const { data: indexedContracts } = useSWR('/api/tape/index-objects');
   const contracts = Object.values(indexedContracts) as ContractType[];
-  const [curContract, setCurContract] = useState('NIFTY');
+  const [curContract, setCurContract] = useRecoilState(optionChainContract);
   const resetOptionChain = useResetRecoilState(optionChainSelector);
 
   useEffect(() => {
     resetOptionChain();
-    const body = {
-      symbol: curContract,
-    };
-    axios.post('/api/set-oc-context', body);
     return () => {
-      axios.post('/api/set-oc-context', {
-        reset: true,
-      });
+      // TODO: reset the oc context from dropdown
       resetOptionChain();
     };
   }, [curContract]);
@@ -42,7 +35,7 @@ const ContractSelect = memo(() => {
         >
           {contracts.map((contract: ContractType) => {
             return (
-              <MenuItem key={contract.symbol} value={contract.shortName}>
+              <MenuItem key={contract.symbol} value={contract.symbol}>
                 {contract.shortName}
               </MenuItem>
             );

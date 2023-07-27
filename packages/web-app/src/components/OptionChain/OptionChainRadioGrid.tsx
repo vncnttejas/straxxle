@@ -25,22 +25,16 @@ const OptionChainRadioGrid = () => {
   const resetOptionChain = useResetRecoilState(optionChainSelector);
   const { symbol } = useRecoilValue(currentInlineEdit);
   useEffect(() => {
-    const { index } = processSymbol(symbol);
+    // const { index } = processSymbol(symbol);
     resetOptionChain();
-    const body = {
-      symbol: index,
-    };
-    axios.post('/api/set-oc-context', body);
+    // TODO: set the oc context from symbol
     return () => {
-      axios.post('/api/set-oc-context', {
-        reset: true,
-      });
       resetOptionChain();
     };
   }, [resetOptionChain]);
 
   return (
-    <Paper sx={{ width: '100%', minHeight: 400 }}>
+    <Paper sx={{ width: '100%' }}>
       <TableContainer>
         <Table aria-label="sticky table">
           <TableHead>

@@ -1,12 +1,12 @@
-import { Controller, Get, Inject, Logger, Query, Res } from '@nestjs/common';
+import { Controller, Get, Logger, Query, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FastifyReply } from 'fastify';
-import { flattenDeep, set, values } from 'lodash';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import { flattenDeep, keys, values } from 'lodash';
 import { TokenService } from './token.service';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FyersResponseParamsDto } from './dtos/fyers-response-param.dto';
+import { IndexSymbolObjType } from '../types/index-symbol-obj.type';
+import { TapeService } from '../tape/tape.service';
+import { StoreService } from '../common/store.service';
 import { CommonService } from '../common/common.service';
 
 @Controller('token')
@@ -16,9 +16,9 @@ export class TokenController {
   constructor(
     private tokenService: TokenService,
     private readonly configService: ConfigService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private eventEmitter: EventEmitter2,
+    private storeService: StoreService,
     private commonService: CommonService,
+    private tapeService: TapeService,
   ) {}
 
   /**
@@ -66,21 +66,19 @@ export class TokenController {
     this.tokenService.initFyersLib();
 
     this.logger.verbose('Listen to default symbols');
-    const defaultSymbols = this.configService.get('defaultSymbols');
-    let liveSymbolData = {};
+    const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
     const watchList = await Promise.all(
       values(defaultSymbols).map(async ({ strikeDiff, symbol }) => {
         const current = await this.commonService.fetchSymbolData(symbol);
-        set(liveSymbolData, `${symbol}.current`, current);
-        await this.cacheManager.set('liveSymbolData', liveSymbolData);
+        this.storeService.setStoreData(`currentValues.${symbol}`, current);
         const atm = this.commonService.getATMStrikeNumfromCur(current, strikeDiff);
         return this.commonService.prepareSymbolList(symbol, atm, '23AUG');
       }),
     );
-    const flattenedWatchList = flattenDeep(watchList);
-    await this.cacheManager.set('watchList', flattenedWatchList, 0);
+    const indexSymbols = keys(defaultSymbols);
+    this.storeService.setStoreData('watchList', flattenDeep([indexSymbols, watchList]));
     const webAppRedirect = this.configService.get('webApp');
-    this.eventEmitter.emit('watchListUpdate', flattenedWatchList);
+    await this.tapeService.triggerListen();
     reply.redirect(301, webAppRedirect);
   }
 }

@@ -14,7 +14,7 @@ function OrderListModal() {
       maxWidth="lg"
       fullWidth
     >
-      <Paper sx={{ width: '100%', minHeight: 400, p: 1 }}>
+      <Paper sx={{ width: '100%', p: 1 }}>
         <Typography variant="h5" p={1}>
           Order List
         </Typography>

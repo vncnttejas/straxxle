@@ -1,24 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { values } from 'lodash';
+import { IndexSymbolObjType } from '../types/index-symbol-obj.type';
 import { SymbolData } from '../types/symbol-data.type';
 const fyersApiV2 = require('fyers-api-v2');
 
 @Injectable()
 export class CommonService {
   private readonly logger = new Logger(CommonService.name);
-
-  private readonly reqFields = [
-    'symbol',
-    'index',
-    'strike',
-    'strikeNum',
-    'strikeType',
-    'contractType',
-    'expiryType',
-    'expiryDate',
-    'lp',
-    'short_name',
-  ];
 
   readonly monthMap = {
     JAN: 0,
@@ -57,7 +46,7 @@ export class CommonService {
   }
 
   prepareSymbolList(symbol: string, atm: number, rawExpiry: string): string[] {
-    const defaultSymbols = this.configService.get('defaultSymbols');
+    const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
     const { prefix, strikeDiff, strikeExtreme } = defaultSymbols[symbol];
     const contractTypes = ['CE', 'PE'];
     const firstStrike = atm - strikeExtreme;
@@ -80,12 +69,13 @@ export class CommonService {
     return lastThursday;
   }
 
-  processSymbol(symbol: string): SymbolData {
+  processOptionSymbol(symbol: string): SymbolData {
     const symbolRegexStr = this.configService.get('symbolRegexStr');
     const optSymbolRegex = new RegExp(symbolRegexStr);
     const [_, index, rawExpiry, strikeNum, contractType] = optSymbolRegex.exec(symbol);
     return {
       index,
+      indexSymbol: this.getSymbolByIndexName(index).symbol,
       rawExpiry,
       strikeNum: parseInt(strikeNum, 10),
       contractType,
@@ -103,7 +93,7 @@ export class CommonService {
     return 'atm';
   }
 
-  async processExpiry(rawExpiry: string): Promise<{ expiryType: string; expiryDate: Date }> {
+  processExpiry(rawExpiry: string): { expiryType: string; expiryDate: Date } {
     const match = /^([0-9]{2})([a-z0-9])([0-9]{2})$/i.exec(rawExpiry);
     if (match?.[0]) {
       const [_, year, month, day] = match;
@@ -125,5 +115,11 @@ export class CommonService {
     const quotes = new fyersApiV2.quotes();
     const current = await quotes.setSymbol(symbol).getQuotes();
     return current.d[0].v.lp;
+  }
+
+  getSymbolByIndexName(indexName: string) {
+    const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
+    const indexSymbol = values(defaultSymbols).filter((symbolObj) => symbolObj.shortName === indexName);
+    return indexSymbol[0];
   }
 }

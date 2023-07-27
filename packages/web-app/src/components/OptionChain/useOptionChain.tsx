@@ -1,4 +1,3 @@
-import { io } from 'socket.io-client';
 import { useEffect } from 'react';
 import { useSetRecoilState, useRecoilValue } from 'recoil';
 import { tapeState } from '../../utils/state';
@@ -6,11 +5,12 @@ import { optionChainStrikesListSelector } from '../../utils/state';
 import { produce } from 'immer';
 import { forEach, set } from 'lodash';
 import { IOptionChainRow } from '../../utils/types';
-
-const socket = io('http://developer.vbox');
+import { socket } from '../../utils/socket.io';
+import { optionChainContract } from '../../utils/state';
 
 const useOptionChain = () => {
   const setTape = useSetRecoilState(tapeState);
+  const indexSymbol = useRecoilValue(optionChainContract);
   useEffect(() => {
     const tickUpdate = (data: IOptionChainRow) => {
       setTape((oc) =>
@@ -22,11 +22,12 @@ const useOptionChain = () => {
         })
       );
     };
-    socket.on('tick', tickUpdate);
+    socket.emit('live-tape', { indexSymbol });
+    socket.on('live-tape', tickUpdate);
     return () => {
-      socket.off('tick', tickUpdate);
+      socket.off('live-tape', tickUpdate);
     };
-  }, [setTape]);
+  }, [indexSymbol, setTape]);
   return useRecoilValue(optionChainStrikesListSelector);
 };
 

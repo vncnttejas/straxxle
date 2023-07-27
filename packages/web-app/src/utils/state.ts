@@ -17,6 +17,11 @@ export const appConstants = atom({
   },
 });
 
+export const optionChainContract = atom({
+  key: 'optionChainContract',
+  default: 'NSE:NIFTY50-INDEX',
+});
+
 export const tapeState = atom<IOptionChainRow>({
   key: 'tapeState',
   default: {},

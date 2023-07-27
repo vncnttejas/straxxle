@@ -14,7 +14,7 @@ import useOptionChain from './useOptionChain';
 const OptionChainGrid = () => {
   const optionChain = useOptionChain();
   return (
-    <Paper sx={{ width: '100%', minHeight: 400 }}>
+    <Paper sx={{ width: '100%' }}>
       <Grid container spacing={2}>
         <Grid item xs={10}>
           <NewEntry />

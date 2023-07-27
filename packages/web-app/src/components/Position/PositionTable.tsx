@@ -8,7 +8,6 @@ import {
   GridRowParams,
   useGridApiContext,
 } from '@mui/x-data-grid';
-import { io } from 'socket.io-client';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import React, { Suspense, useCallback, useEffect, useMemo } from 'react';
 import { Button, TextField, Tooltip, Typography, styled } from '@mui/material';
@@ -35,6 +34,7 @@ import Loading from '../Common/Loading';
 import { set } from 'lodash';
 import { getNextStrikeSymbol } from '../../utils/order';
 import { IdType, PositionResponse } from '../../utils/types';
+import { socket } from '../../utils/socket.io';
 
 const PositionGrid = styled(DataGrid)(() => ({
   '& .stxl-row-inactive': {
@@ -53,8 +53,6 @@ const PositionGrid = styled(DataGrid)(() => ({
     color: '#ff0000',
   },
 }));
-
-const socket = io('http://developer.vbox');
 
 function CustomQtyField(props: GridRenderCellParams): JSX.Element {
   const { id, value, row } = props;

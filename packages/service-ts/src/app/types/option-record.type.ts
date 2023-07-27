@@ -1,3 +1,3 @@
-import { EnrichedOptiontick } from './enriched-option.type';
+import { Enrichedtick } from './enriched-tick.type';
 
-export type OptionRecordType = Record<string, EnrichedOptiontick>;
+export type TickRecordType = Record<string, Enrichedtick>;
