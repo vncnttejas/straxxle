@@ -1,2 +1,2 @@
-export { ExtractedFyersCred } from '../types/extracted-fyers-cred.type';
-export { FyersCred } from '../types/fyers-cred.type';
+export { ExtractedFyersCred } from './extracted-fyers-cred.type';
+export { FyersCred } from './fyers-cred.type';
