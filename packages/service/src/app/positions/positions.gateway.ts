@@ -22,7 +22,7 @@ export class PositionsGateway {
         switchMap(async () => {
           const filterContext = this.positionsService.getFilterContext();
           const orders = await this.ordersService.dbGetOrdersBetweenTime(filterContext);
-          return await this.positionsService.computePosition(orders);
+          return this.positionsService.computePosition(orders);
         }),
       )
       .subscribe((positionWithSummary) => {

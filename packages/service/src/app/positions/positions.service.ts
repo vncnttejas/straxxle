@@ -215,7 +215,7 @@ export class PositionsService {
     });
   }
 
-  async computePosition(orders: Order[]): Promise<PositionWithSummary> {
+  computePosition(orders: Order[]): PositionWithSummary {
     const position = this.computeRawPosition(orders);
     const pnlPosition = this.computeStrikeWisePnl(position);
     const sortedPosition = this.sortPositionList(pnlPosition);
