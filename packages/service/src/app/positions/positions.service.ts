@@ -1,14 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { produce } from 'immer';
-import _, { forEach, keyBy, map, set, values } from 'lodash';
+import _, { keyBy, set, values } from 'lodash';
 import { OrdersService } from '../orders/orders.service';
 import { PositionSummary } from './types/position-summary.type';
 import { Order } from '../orders/entities/order.entity';
 import { StrikewisePosition } from './types/strike-wise-position.type';
-import { ConfigService } from '@nestjs/config';
 import { TapeService } from '../tape/tape.service';
 import { PositionWithPnl } from './types/position-with-pnl.type';
-import { IndexedPosition } from './types/indexed-position.type';
 import { PositionWithSummary } from './types';
 import { CommonService } from '../common/common.service';
 import { FilterOrderByTimeDto } from './dtos';
@@ -22,7 +19,6 @@ export class PositionsService {
   };
 
   constructor(
-    private readonly configService: ConfigService,
     private commonService: CommonService,
     private tapeService: TapeService,
     private ordersService: OrdersService,

@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { keys, values } from 'lodash';
 import { IndexSymbolObjType } from '../types/index-symbol-obj.type';
 import { SymbolData } from '../types/symbol-data.type';
-const fyersApiV2 = require('fyers-api-v2');
+import fyersApiV2 from 'fyers-api-v2';
 
 @Injectable()
 export class CommonService {
@@ -72,6 +72,7 @@ export class CommonService {
   processOptionSymbol(symbol: string): SymbolData {
     const symbolRegexStr = this.configService.get('symbolRegexStr');
     const optSymbolRegex = new RegExp(symbolRegexStr);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_, index, rawExpiry, strikeNum, contractType] = optSymbolRegex.exec(symbol);
     return {
       index,
@@ -96,6 +97,7 @@ export class CommonService {
   processExpiry(rawExpiry: string): { expiryType: string; expiryDate: Date } {
     const match = /^([0-9]{2})([a-z0-9])([0-9]{2})$/i.exec(rawExpiry);
     if (match?.[0]) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [_, year, month, day] = match;
       const monthNum = this.singleDigitMonthMap[month.toUpperCase()] || parseInt(month, 10) - 1;
       return {

@@ -13,7 +13,7 @@ export class TapeService {
 
   private tape = {} as TickRecordType;
   private liveTapeContext: string = null;
-  private _streamLive: boolean = false;
+  private _streamLive = false;
   private readonly reqFields = [
     'symbol',
     'index',

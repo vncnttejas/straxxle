@@ -4,6 +4,7 @@ import { OrdersService } from '../orders/orders.service';
 import { PositionsService } from './positions.service';
 import { Server } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import { keys } from 'lodash';
 
 @WebSocketGateway()
 export class PositionsGateway {
@@ -25,8 +26,10 @@ export class PositionsGateway {
         }),
       )
       .subscribe((positionWithSummary) => {
-        this.logger.verbose('Emitting position data');
-        this.server.emit('live-position', positionWithSummary);
+        if (keys(positionWithSummary.position).length) {
+          this.logger.verbose('Emitting position data');
+          this.server.emit('live-position', positionWithSummary);
+        }
       });
   }
 }

@@ -1,16 +1,10 @@
-import { Body, Controller, Get, ParseArrayPipe, Post, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, ParseArrayPipe, Post } from '@nestjs/common';
 import { CreateOrdersRequestDto } from './dtos/create-orders-request.dto';
-import { TapeService } from '../tape/tape.service';
 import { OrdersService } from './orders.service';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private ordersService: OrdersService, private tapeService: TapeService) {}
-
-  @Get()
-  getOrders(): string {
-    return 'orders';
-  }
+  constructor(private ordersService: OrdersService) {}
 
   @Post()
   async createOrders(@Body(new ParseArrayPipe({ items: CreateOrdersRequestDto })) orders: CreateOrdersRequestDto[]) {

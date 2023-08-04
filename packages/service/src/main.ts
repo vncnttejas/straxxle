@@ -1,8 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import {
-  FastifyAdapter,
-  NestFastifyApplication,
-} from '@nestjs/platform-fastify';
+import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { AppModule } from './app/app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -15,10 +12,7 @@ import compression from '@fastify/compress';
 async function bootstrap() {
   const logger = new Logger('Main');
   logger.verbose('Load fastify adapter');
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter(),
-  );
+  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
 
   logger.verbose('Enabling CORS');
   app.register(cors);

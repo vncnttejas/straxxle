@@ -21,7 +21,7 @@ export class StoreService {
     return data;
   }
 
-  searchStoreData(callback: Function): unknown {
+  searchStoreData(callback: (StoreType) => unknown): unknown {
     return callback(this.store);
   }
 
