@@ -9,7 +9,7 @@ import {
   useGridApiContext,
 } from '@mui/x-data-grid';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import React, { Suspense, useCallback, useEffect, useMemo } from 'react';
+import React, { Suspense, useCallback, useMemo } from 'react';
 import { Button, TextField, Tooltip, Typography, styled } from '@mui/material';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
@@ -27,14 +27,11 @@ import {
   inlineEditsState,
   optionChainRadioModal,
   posGridRowSelectionState,
-  positionState,
-  positionSummaryState,
 } from '../../utils/state';
 import Loading from '../Common/Loading';
 import { set } from 'lodash';
 import { getNextStrikeSymbol } from '../../utils/order';
-import { IdType, PositionResponse } from '../../utils/types';
-import { socket } from '../../utils/socket.io';
+import { IdType } from '../../utils/types';
 
 const PositionGrid = styled(DataGrid)(() => ({
   '& .stxl-row-inactive': {
@@ -145,8 +142,6 @@ function CustomQtyEditField({
 }
 
 function PositionTable(): JSX.Element {
-  const setPositionSummary = useSetRecoilState(positionSummaryState);
-  const setPosition = useSetRecoilState(positionState);
   const strikeData = useRecoilValue(strikeWiseDataSelector);
   const strikeDataList = Object.values(strikeData);
   const setOpenModal = useSetRecoilState(optionChainRadioModal);
@@ -159,17 +154,6 @@ function PositionTable(): JSX.Element {
   const { enableOrder, enableDelete, enableClear, enableMove } = useRecoilValue(
     actionDisplaySelector
   );
-
-  useEffect(() => {
-    const positionUpdate = ({ position, summary }: PositionResponse) => {
-      setPosition(position);
-      setPositionSummary(summary);
-    };
-    socket.on('position', positionUpdate);
-    return () => {
-      socket.off('position', positionUpdate);
-    };
-  }, []);
 
   const resetChanges = useCallback(
     (ids: IdType[]) => () => {

@@ -4,6 +4,7 @@ export interface IndexSymbolObjValue {
   symbol: string;
   strikeDiff: number;
   strikeExtreme: number;
+  lotSize: number;
 }
 
 export type IndexSymbolObjType = Record<string, IndexSymbolObjValue>;

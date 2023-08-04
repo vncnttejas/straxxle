@@ -1,14 +1,36 @@
 import { Injectable } from '@nestjs/common';
 import { OrderFees } from './types/order-fees.type';
 import { Order } from './entities/order.entity';
+import { CreateOrdersRequestDto } from './dtos/create-orders-request.dto';
+import { TapeService } from '../tape/tape.service';
+import { EnrichedOptiontick } from '../types';
+import { CommonService } from '../common/common.service';
+import { CreateOrderDto } from './dtos/create-order.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Between, Repository } from 'typeorm';
+import { Tag } from '../tags/entities/tag.entity';
+import { FilterOrderByTimeDto } from '../positions/dtos';
 
 @Injectable()
 export class OrdersService {
-  constructor() {}
+  constructor(
+    private tapeService: TapeService,
+    private commonService: CommonService,
+    @InjectRepository(Order) private orderRepository: Repository<Order>,
+  ) {}
 
-  async getOrders(startTime: Date, endTime: Date): Promise<Order[]> {
-    const orders = [new Order()];
-    return orders;
+  async dbGetOrdersBetweenTime(times: FilterOrderByTimeDto) {
+    const { startTime, endTime } = times;
+    return this.orderRepository.find({
+      where: {
+        createdAt: Between(startTime, endTime),
+      },
+    });
+  }
+
+  async dbInsertOrders(orders: CreateOrderDto[]) {
+    const orderEntities = this.orderRepository.create(orders);
+    await this.orderRepository.save(orderEntities);
   }
 
   computeOrderFees(orderVal: number): OrderFees {
@@ -34,5 +56,33 @@ export class OrdersService {
       response[key] = +response[key].toFixed(2);
     });
     return response;
+  }
+
+  enrichOrderForDb(order: CreateOrdersRequestDto) {
+    const strikeSnapshot = this.tapeService.getStrikeData(order.symbol) as EnrichedOptiontick;
+    const lotSize = this.commonService.getLotSizeBySymbol(strikeSnapshot.indexSymbol);
+    if (order.qty % lotSize !== 0) {
+      throw Error(`Order qty can only be multiples of ${lotSize}`);
+    }
+    if (!strikeSnapshot) {
+      throw Error('Strike Not Found');
+    }
+    const tags = order.tags.map((name) =>
+      Tag.create({
+        name,
+      }),
+    );
+    return {
+      ...order,
+      tags,
+      strike: strikeSnapshot.strike,
+      txnPrice: strikeSnapshot.ask,
+      contractType: strikeSnapshot.contractType,
+      tt: strikeSnapshot.tt,
+      exchange: strikeSnapshot.exchange,
+      expiryDate: strikeSnapshot.expiryDate,
+      expiryType: strikeSnapshot.expiryType,
+      indexSymbol: strikeSnapshot.indexSymbol,
+    };
   }
 }

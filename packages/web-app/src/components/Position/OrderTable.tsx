@@ -16,7 +16,7 @@ function OrdersTable() {
         type: 'string',
         width: 200,
         valueGetter: (params: GridValueGetterParams) =>
-          getReadableDate(params.row.time),
+          getReadableDate(new Date(params.row.time)),
       },
       {
         field: 'expiry',

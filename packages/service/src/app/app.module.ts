@@ -11,6 +11,7 @@ import { TagsModule } from './tags/tags.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TapeModule } from './tape/tape.module';
 import { CommonModule } from './common/common.module';
+import { DataSource } from 'typeorm';
 
 @Module({
   imports: [
@@ -35,4 +36,6 @@ import { CommonModule } from './common/common.module';
   ],
   controllers: [AppController],
 })
-export class AppModule {}
+export class AppModule {
+  constructor(private dataSource: DataSource) {}
+}

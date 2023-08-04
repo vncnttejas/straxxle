@@ -13,6 +13,7 @@ export type StrikewisePosition = Record<
     posVal: number;
     symbol: string;
     cumOpenVal: number;
+    indexSymbol: string;
     posOrderList: OrderDetails[];
   }
 >;

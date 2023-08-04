@@ -1,24 +1,24 @@
-import { Controller, Get, Query, Sse } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Post, Query } from '@nestjs/common';
 import { PositionsService } from './positions.service';
-import { ComputePositionReqDto } from './dtos/compute-pos-req.dto';
-import { Observable, interval, map } from 'rxjs';
+import { FilterOrderByTimeDto } from '../orders/dtos/filter-order-by-time.dto';
 import { PositionWithSummary } from './types';
+import { OrdersService } from '../orders/orders.service';
 
 @Controller('position')
 export class PositionsController {
-  constructor(private positionService: PositionsService) {}
+  private logger = new Logger(PositionsController.name);
+
+  constructor(private positionService: PositionsService, private ordersService: OrdersService) {}
 
   @Get()
-  async computePositions(@Query() query: ComputePositionReqDto): Promise<PositionWithSummary> {
-    return this.positionService.computePosition(query);
+  async computePositions(@Query() query: FilterOrderByTimeDto): Promise<PositionWithSummary> {
+    const orders = await this.ordersService.dbGetOrdersBetweenTime(query);
+    return this.positionService.computePosition(orders);
   }
 
-  @Sse('live')
-  getLivePositions(@Query() query: ComputePositionReqDto): Observable<Promise<PositionWithSummary>> {
-    return interval(3000).pipe(
-      map((_) => {
-        return this.positionService.computePosition(query);
-      }),
-    );
+  @Post()
+  setPositionContext(@Body() context: FilterOrderByTimeDto) {
+    this.logger.log('Setting context to', JSON.stringify(context));
+    this.positionService.setFilterContext(context);
   }
 }

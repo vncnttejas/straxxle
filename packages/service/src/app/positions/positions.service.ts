@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { produce } from 'immer';
-import _, { keyBy, set } from 'lodash';
+import _, { forEach, keyBy, map, set, values } from 'lodash';
 import { OrdersService } from '../orders/orders.service';
 import { PositionSummary } from './types/position-summary.type';
 import { Order } from '../orders/entities/order.entity';
@@ -9,18 +9,32 @@ import { ConfigService } from '@nestjs/config';
 import { TapeService } from '../tape/tape.service';
 import { PositionWithPnl } from './types/position-with-pnl.type';
 import { IndexedPosition } from './types/indexed-position.type';
-import { ComputePositionReqDto } from './dtos';
 import { PositionWithSummary } from './types';
 import { CommonService } from '../common/common.service';
+import { FilterOrderByTimeDto } from './dtos';
+import { defaultEndTime, defaultStartTime } from '../orders/dtos/filter-order-by-time.dto';
 
 @Injectable()
 export class PositionsService {
+  filterContext: FilterOrderByTimeDto = {
+    startTime: defaultStartTime,
+    endTime: defaultEndTime,
+  };
+
   constructor(
     private readonly configService: ConfigService,
     private commonService: CommonService,
     private tapeService: TapeService,
-    private orderService: OrdersService,
+    private ordersService: OrdersService,
   ) {}
+
+  getFilterContext() {
+    return this.filterContext;
+  }
+
+  setFilterContext(filter: FilterOrderByTimeDto) {
+    this.filterContext = filter;
+  }
 
   private defaultExitFees = {
     brokerage: 0,
@@ -36,9 +50,10 @@ export class PositionsService {
     const finalPos = {} as StrikewisePosition;
     let reset = false;
     orders.forEach((order) => {
-      const { symbol, strike, qty: orderQty, txnPrice, tt, index, expiryDate } = order;
+      const { symbol, strike, qty: orderQty, txnPrice, tt, indexSymbol, expiryDate } = order;
+      const index = this.commonService.getIndexShortNameBySymbol(indexSymbol);
       const orderVal = orderQty * txnPrice;
-      const fees = this.orderService.computeOrderFees(orderVal);
+      const fees = this.ordersService.computeOrderFees(orderVal);
       const orderDetails = {
         symbol,
         strike,
@@ -51,14 +66,15 @@ export class PositionsService {
       if (!finalPos[symbol]?.symbol) {
         const exp = new Date(expiryDate);
         set(finalPos, `${symbol}.symbol`, symbol);
-        const month = this.commonService.monthMap[exp.getMonth()];
+        const month = exp.toLocaleString('default', { month: 'short' }).toUpperCase();
         const dateWithSup = this.commonService.addSup(exp.getDate());
         finalPos[symbol].id = symbol;
+        finalPos[symbol].indexSymbol = indexSymbol;
         finalPos[symbol].posFees = fees;
         finalPos[symbol].strike = strike;
         finalPos[symbol].expiry = `${index} ${dateWithSup} ${month}`;
         finalPos[symbol].posQty = orderQty;
-        finalPos[symbol].posAvg = txnPrice;
+        finalPos[symbol].posAvg = +txnPrice;
         finalPos[symbol].posVal = orderVal;
         finalPos[symbol].cumOpenVal = orderVal;
         finalPos[symbol].posOrderList = [orderDetails];
@@ -101,24 +117,28 @@ export class PositionsService {
     return finalPos;
   }
 
-  // Compute PnL for each position
-  computeStrikeWisePnl(positions: IndexedPosition): PositionWithPnl[] {
-    const lotSize = this.configService.get<number>('lotSize');
-    return produce(Object.values(positions), (draft) => {
-      draft.forEach(async (position) => {
-        const { posQty, posAvg, posVal, symbol } = position;
-        const strikeData = this.tapeService.getStrikeData(symbol);
-        const strike = await this.tapeService.enrichOptionStrikeData(strikeData);
-        const lp = strike?.lp || 0;
-        const pnl = posQty ? (lp - posAvg) * posQty : 0 - posVal;
-        position.lp = lp;
-        position.pnl = +pnl.toFixed(2);
-        position.posQty = posQty / lotSize;
-        // The following line is required because when loading the app for the first time
-        // generally strike may be empty until it's fetched
-        const curPosVal = posQty * (strike?.lp || 0);
-        position.exitFees = posQty ? this.orderService.computeOrderFees(curPosVal) : this.defaultExitFees;
-      });
+  /**
+   * Compute PnL for each position/strike
+   * @param positions -
+   * @returns positions with pnl
+   */
+  computeStrikeWisePnl(positions: StrikewisePosition): PositionWithPnl[] {
+    return values(positions).map((position) => {
+      const lotSize = this.commonService.getLotSizeBySymbol(position.indexSymbol);
+      const { posQty, posAvg, posVal, symbol } = position;
+      const strike = this.tapeService.getStrikeData(symbol);
+      const lp = strike?.lp || 0;
+      const pnl = posQty ? (lp - posAvg) * posQty : 0 - posVal;
+      // The following line is required because when loading the app for the first time
+      // generally strike may be empty until its fetched
+      const curPosVal = posQty * (strike?.lp || 0);
+      return {
+        ...position,
+        lp: lp,
+        pnl: +pnl.toFixed(2),
+        posQty: posQty / lotSize,
+        exitFees: posQty ? this.ordersService.computeOrderFees(curPosVal) : this.defaultExitFees,
+      };
     });
   }
 
@@ -199,11 +219,9 @@ export class PositionsService {
     });
   }
 
-  async computePosition(query: ComputePositionReqDto): Promise<PositionWithSummary> {
-    const { startTime, endTime } = query;
-    const filteredOrders = await this.orderService.getOrders(startTime, endTime);
-    const position = this.computeRawPosition(filteredOrders);
-    const pnlPosition = this.computeStrikeWisePnl(position as unknown as IndexedPosition);
+  async computePosition(orders: Order[]): Promise<PositionWithSummary> {
+    const position = this.computeRawPosition(orders);
+    const pnlPosition = this.computeStrikeWisePnl(position);
     const sortedPosition = this.sortPositionList(pnlPosition);
     const summary = this.computePositionSummary(sortedPosition);
     return {

@@ -6,6 +6,7 @@ import MainPage from './MainPage';
 import useSWR from 'swr';
 import Loading from '../Common/Loading';
 import { Suspense } from 'react';
+import { useLiveData } from './useLiveData';
 
 const theme = createTheme({
   palette: {
@@ -26,6 +27,7 @@ const App = () => {
   if (!isLoading && !data.accessToken) {
     window.location.href = 'http://localhost:3030/token/generate';
   }
+  useLiveData();
 
   return (
     <Suspense fallback={<Loading />}>

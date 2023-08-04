@@ -1,5 +1,14 @@
-import { Tag } from 'src/app/tags/entities';
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Tag } from '../../tags/entities/tag.entity';
+import {
+  BaseEntity,
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('orders')
 export class Order extends BaseEntity {
@@ -15,10 +24,11 @@ export class Order extends BaseEntity {
   @Column()
   qty: number;
 
-  @Column()
+  @ManyToMany(() => Tag, (tag) => tag.id)
+  @JoinTable()
   tags: Tag[];
 
-  @Column()
+  @Column('decimal')
   txnPrice: number;
 
   @Column()
@@ -34,23 +44,11 @@ export class Order extends BaseEntity {
   expiryDate: Date;
 
   @Column()
-  index: string;
+  indexSymbol: string;
 
-  @Column()
-  filledQty: number;
-
-  @Column()
-  filledAt: Date;
-
-  @Column()
-  cancelled: boolean;
-
-  @Column()
-  cancelledAt: Date;
-
-  @Column()
+  @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @Column()
+  @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 }

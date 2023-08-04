@@ -22,26 +22,23 @@ export const optionChainContract = atom({
   default: 'NSE:NIFTY50-INDEX',
 });
 
+// Current option chain, filtered by context from server side
 export const tapeState = atom<IOptionChainRow>({
   key: 'tapeState',
   default: {},
 });
 
+// current option chain keyed by symbol
 export const optionChainSelector = selector({
   key: 'optionChainSelector',
   get: ({ get }) => {
     const tape = get(tapeState);
     return keyBy(tape, 'symbol');
   },
-  set: ({ get, set }) => {
-    const tape = get(tapeState);
-    const optionStrikeKeys = Object.keys(tape);
-    const newTape = produce(tape, (draft) => {
-      optionStrikeKeys.forEach((strike) => {
-        delete draft[strike];
-      });
-    });
-    set(tapeState, newTape);
+  set: ({ reset }, newValue) => {
+    if (newValue instanceof DefaultValue) {
+      reset(tapeState);
+    }
   },
 });
 

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { values } from 'lodash';
+import { keys, values } from 'lodash';
 import { IndexSymbolObjType } from '../types/index-symbol-obj.type';
 import { SymbolData } from '../types/symbol-data.type';
 const fyersApiV2 = require('fyers-api-v2');
@@ -117,9 +117,28 @@ export class CommonService {
     return current.d[0].v.lp;
   }
 
+  /**
+   * Returns list of default index symbols
+   * @returns default symbol
+   */
+  getDefaultSymbols(): string[] {
+    const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
+    return keys(defaultSymbols);
+  }
+
   getSymbolByIndexName(indexName: string) {
     const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
     const indexSymbol = values(defaultSymbols).filter((symbolObj) => symbolObj.shortName === indexName);
     return indexSymbol[0];
+  }
+
+  getIndexShortNameBySymbol(indexSymbol: string): string {
+    const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
+    return defaultSymbols?.[indexSymbol].shortName;
+  }
+
+  getLotSizeBySymbol(indexSymbol: string): number {
+    const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
+    return defaultSymbols?.[indexSymbol].lotSize;
   }
 }

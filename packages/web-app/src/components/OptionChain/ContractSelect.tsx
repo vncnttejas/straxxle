@@ -3,6 +3,7 @@ import { memo, useEffect } from 'react';
 import useSWR from 'swr';
 import { useRecoilState, useResetRecoilState } from 'recoil';
 import { optionChainContract, optionChainSelector } from '../../utils/state';
+import axios from 'axios';
 
 type ContractType = {
   symbol: string;
@@ -17,9 +18,15 @@ const ContractSelect = memo(() => {
 
   useEffect(() => {
     resetOptionChain();
+    axios.post('/api/tape/set-live-context', {
+      indexSymbol: curContract,
+    });
     return () => {
-      // TODO: reset the oc context from dropdown
-      resetOptionChain();
+      axios
+        .post('/api/tape/set-live-context', {
+          reset: true,
+        })
+        .then(resetOptionChain);
     };
   }, [curContract]);
 

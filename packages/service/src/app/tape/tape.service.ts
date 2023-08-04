@@ -12,7 +12,8 @@ export class TapeService {
   private readonly logger = new Logger(TapeService.name);
 
   private tape = {} as TickRecordType;
-
+  private liveTapeContext: string = null;
+  private _streamLive: boolean = false;
   private readonly reqFields = [
     'symbol',
     'index',
@@ -32,14 +33,38 @@ export class TapeService {
     private readonly configService: ConfigService,
   ) {}
 
+  getLiveTapeContext() {
+    return this.liveTapeContext;
+  }
+
+  setLiveTapeContext(value: string) {
+    this.liveTapeContext = value;
+  }
+
+  get streamLive() {
+    return this._streamLive;
+  }
+
+  set streamLive(value: boolean) {
+    this._streamLive = value;
+  }
+
+  /**
+   * Returns a enriched strike object by symbol
+   * @param strike Strike symbol
+   * @returns Enriched strike object filtered by the symbol string
+   */
   getStrikeData(strike: string): Enrichedtick {
     const strikeData = get(this.tape, strike);
     if (!strikeData) {
-      throw new Error(`Strike ${strike} not found in tape`);
+      this.logger.error(`Strike ${strike} not found in tape`);
     }
     return strikeData;
   }
 
+  /**
+   * @returns The complete enriched tape indexed by symbol
+   */
   getTapeData(): TickRecordType {
     return this.tape;
   }
@@ -54,7 +79,7 @@ export class TapeService {
     set(this.tape, symbol, data);
   }
 
-  async enrichOptionStrikeData(tick: Optiontick): Promise<Enrichedtick> {
+  enrichOptionStrikeData(tick: Optiontick): Enrichedtick {
     const { symbol } = tick;
     const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
     if (keys(defaultSymbols).includes(symbol)) {
@@ -101,12 +126,12 @@ export class TapeService {
         dataType: 'symbolUpdate',
         token,
       };
-      fyersApiV2.fyers_connect(request, async (data: string) => {
+      fyersApiV2.fyers_connect(request, (data: string) => {
         const tickUpdate = JSON.parse(data);
         if (tickUpdate.d?.['7208']?.length) {
           const strikeData = tickUpdate.d['7208'][0].v as Optiontick;
           const { symbol } = strikeData;
-          const enrichedOptiontick = await this.enrichOptionStrikeData(strikeData);
+          const enrichedOptiontick = this.enrichOptionStrikeData(strikeData);
           this.setTapeData(symbol, enrichedOptiontick);
         }
       });

@@ -9,10 +9,11 @@ import NewEntry from './NewEntry';
 import { OptionChainRow, StrikeCell } from './OptionChainRow';
 import ContractSelect from './ContractSelect';
 import './OptionChain.css';
-import useOptionChain from './useOptionChain';
+import { useRecoilValue } from 'recoil';
+import { optionChainStrikesListSelector } from '../../utils/state';
 
 const OptionChainGrid = () => {
-  const optionChain = useOptionChain();
+  const optionChain = useRecoilValue(optionChainStrikesListSelector);
   return (
     <Paper sx={{ width: '100%' }}>
       <Grid container spacing={2}>

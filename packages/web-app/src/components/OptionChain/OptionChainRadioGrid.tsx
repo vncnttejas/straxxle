@@ -10,10 +10,13 @@ import TableRow from '@mui/material/TableRow';
 import { styled } from '@mui/material/styles';
 import { Paper } from '@mui/material';
 import './OptionChain.css';
-import { currentInlineEdit, optionChainSelector } from '../../utils/state';
+import {
+  currentInlineEdit,
+  optionChainSelector,
+  optionChainStrikesListSelector,
+} from '../../utils/state';
 import { OptionChainRadioRow } from './OptionChainRow';
 import { processSymbol } from '../../utils/order';
-import useOptionChain from './useOptionChain';
 
 export const StrikeCell = styled(TableCell)(() => ({
   paddingTop: 2,
@@ -21,7 +24,7 @@ export const StrikeCell = styled(TableCell)(() => ({
 }));
 
 const OptionChainRadioGrid = () => {
-  const optionChain = useOptionChain();
+  const optionChain = useRecoilValue(optionChainStrikesListSelector);
   const resetOptionChain = useResetRecoilState(optionChainSelector);
   const { symbol } = useRecoilValue(currentInlineEdit);
   useEffect(() => {
