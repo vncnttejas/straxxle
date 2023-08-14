@@ -1,9 +1,9 @@
 import { Box, FormControl, InputLabel, MenuItem, Select } from '@mui/material';
-import { memo, useEffect } from 'react';
+import { memo } from 'react';
 import useSWR from 'swr';
-import { useRecoilState, useResetRecoilState } from 'recoil';
-import { optionChainContract, optionChainSelector } from '../../utils/state';
-import axios from 'axios';
+import { useRecoilState } from 'recoil';
+import { optionChainContract } from '../../utils/state';
+import { useOptionChainContext } from './useOptionChainContext';
 
 type ContractType = {
   symbol: string;
@@ -14,21 +14,7 @@ const ContractSelect = memo(() => {
   const { data: indexedContracts } = useSWR('/api/tape/index-objects');
   const contracts = Object.values(indexedContracts) as ContractType[];
   const [curContract, setCurContract] = useRecoilState(optionChainContract);
-  const resetOptionChain = useResetRecoilState(optionChainSelector);
-
-  useEffect(() => {
-    resetOptionChain();
-    axios.post('/api/tape/set-live-context', {
-      indexSymbol: curContract,
-    });
-    return () => {
-      axios
-        .post('/api/tape/set-live-context', {
-          reset: true,
-        })
-        .then(resetOptionChain);
-    };
-  }, [curContract]);
+  useOptionChainContext();
 
   return (
     <Box sx={{ pt: 2, pr: 2, textAlign: 'right' }}>

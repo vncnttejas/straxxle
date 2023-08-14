@@ -1,12 +1,13 @@
-.atm-strike {
+.stxl-atm-strike {
   background-color: black;
 }
 
-.itm-strike {
+.stxl-itm-strike {
   background-color: #bdc0a024;
 }
-.disabled-strike {
+.stxl-disabled-strike {
   cursor: wait;
+  background: #c3c3c39a;
 }
 .MuiTableRow-root:hover .stxl-txn-btn {
   visibility: visible;

@@ -78,7 +78,7 @@ function CustomQtyField(props: GridRenderCellParams): JSX.Element {
   );
 }
 
-function CustomStrikeField(props: GridRenderCellParams): JSX.Element {
+function StrikeField(props: GridRenderCellParams): JSX.Element {
   const { id, value, row } = props;
   const setVal = useSetRecoilState(inlineEditsSelector(id));
   return (
@@ -105,10 +105,11 @@ function CustomStrikeField(props: GridRenderCellParams): JSX.Element {
   );
 }
 
-function CustomQtyEditField({
+function QtyEditField({
   id,
   value,
   field,
+  row,
 }: GridRenderEditCellParams): JSX.Element {
   const setInlineEdit = useSetRecoilState(inlineEditsSelector(id));
   const setCurrentEdit = useSetRecoilState(currentInlineEdit);
@@ -117,7 +118,7 @@ function CustomQtyEditField({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = +e.target.value;
     apiRef.current.setEditCellValue({ id, field, value: newValue });
-    setCurrentEdit({ symbol: id });
+    setCurrentEdit({ symbol: id, indexSymbol: row.indexSymbol });
     setInlineEdit((prev) => ({ ...prev, newQty: newValue }));
   };
 
@@ -230,7 +231,7 @@ function PositionTable(): JSX.Element {
         width: 100,
         editable: true,
         renderCell: (params: GridRenderCellParams) => (
-          <CustomStrikeField {...params} />
+          <StrikeField {...params} />
         ),
       },
       {
@@ -238,7 +239,7 @@ function PositionTable(): JSX.Element {
         headerName: 'Qty (lots)',
         type: 'number',
         renderEditCell: (params: GridRenderEditCellParams) => (
-          <CustomQtyEditField {...params} />
+          <QtyEditField {...params} />
         ),
         width: 80,
         renderCell: (params: GridRenderCellParams) => (
@@ -393,7 +394,10 @@ function PositionTable(): JSX.Element {
               switch (params.field) {
                 case 'strike':
                   setOpenModal({ open: true });
-                  setCurrentEdit({ symbol: params.id });
+                  setCurrentEdit({
+                    symbol: params.id,
+                    indexSymbol: params.row.indexSymbol,
+                  });
                   break;
                 default:
                   break;
@@ -422,22 +426,26 @@ function PositionTable(): JSX.Element {
                     }
                     break;
                   case 'posQty':
-                    if (value > 0) {
-                      classList.push(`${prefix}-qty-long`);
-                    }
-                    if (value < 0) {
-                      classList.push(`${prefix}-qty-short`);
+                    if (typeof value === 'number') {
+                      if (value > 0) {
+                        classList.push(`${prefix}-qty-long`);
+                      }
+                      if (value < 0) {
+                        classList.push(`${prefix}-qty-short`);
+                      }
                     }
                     if (qtyEdited) {
                       classList.push(`${prefix}-edited`);
                     }
                     break;
                   case 'pnl':
-                    if (value > 0) {
-                      classList.push(`${prefix}-pnl-positive`);
-                    }
-                    if (value < 0) {
-                      classList.push(`${prefix}-pnl-negative`);
+                    if (typeof value === 'number') {
+                      if (value > 0) {
+                        classList.push(`${prefix}-pnl-positive`);
+                      }
+                      if (value < 0) {
+                        classList.push(`${prefix}-pnl-negative`);
+                      }
                     }
                     break;
                   default:

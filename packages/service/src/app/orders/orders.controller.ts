@@ -7,7 +7,9 @@ export class OrdersController {
   constructor(private ordersService: OrdersService) {}
 
   @Post()
-  async createOrders(@Body(new ParseArrayPipe({ items: CreateOrdersRequestDto })) orders: CreateOrdersRequestDto[]) {
+  async createOrders(
+    @Body(new ParseArrayPipe({ items: CreateOrdersRequestDto })) orders: CreateOrdersRequestDto[],
+  ) {
     const enrichedOrders = orders.map((order) => this.ordersService.enrichOrderForDb(order));
     await this.ordersService.dbInsertOrders(enrichedOrders);
     return {

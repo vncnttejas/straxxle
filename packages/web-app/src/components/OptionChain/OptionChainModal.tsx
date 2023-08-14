@@ -37,7 +37,7 @@ export const OptionChainRadioModal = () => {
     <Dialog
       open={modalOpen.open}
       onClose={() => setModalOpen({ open: false })}
-      maxWidth="xs"
+      maxWidth="lg"
       fullWidth={true}
     >
       <OptionChainRadioGrid />

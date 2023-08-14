@@ -330,10 +330,11 @@ export const optionChainStrikesListSelector = selector<[IdType, IndexedStrikeCon
   },
 });
 
-export const currentInlineEdit = atom<{ symbol: IdType }>({
+export const currentInlineEdit = atom<{ symbol: IdType; indexSymbol: string }>({
   key: 'currentInlineEdit',
   default: {
     symbol: '',
+    indexSymbol: '',
   },
 });
 

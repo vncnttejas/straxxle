@@ -244,7 +244,7 @@ export const OptionChainRow = memo(function OptionChainRow({
     [basket, setBasket]
   );
   return (
-    <StrikeCell className={`${type}-strike`}>
+    <StrikeCell className={`stxl-${type}-strike`}>
       <StrikeRowContainer ispe={+isPe}>
         <OiBarContainer>
           <OiBar ispe={+isPe} oilen={oiLen}></OiBar>
@@ -273,12 +273,16 @@ export const OptionChainRadioRow = memo(function OptionChainRadioRow({
   symbol,
   contractType,
 }: OptionChainRowProps) {
-  const price = useRecoilValue(optionChainPriceSelector(symbol));
+  const price = useRecoilValue(optionChainPriceSelector(symbol)) || 0;
+  const oiLen = useRecoilValue(optionChainOiLenSelector(symbol)) || 0;
+  const oi = useRecoilValue(optionChainOiSelector(symbol)) || 0;
+  const ptsDiff = useRecoilValue(optionChainDiffSelector(symbol)) || 0;
   const setOpenModal = useSetRecoilState(optionChainRadioModal);
   const { symbol: editSymbol } = useRecoilValue(currentInlineEdit);
   const [selection, setSelection] = useRecoilState(
     inlineEditsSelector(editSymbol)
   );
+  const isPe = contractType === 'PE';
   const inlineEditStrike = useRecoilValue(optionChainStrikeSelector(symbol));
   const handleSelection = useCallback(
     (e: React.SyntheticEvent<HTMLInputElement>) => {
@@ -290,14 +294,23 @@ export const OptionChainRadioRow = memo(function OptionChainRadioRow({
     },
     [inlineEditStrike, setOpenModal, setSelection]
   );
-
-  return contractType === 'PE' ? (
-    <>
-      <StrikeCell
-        align="left"
-        sx={{ align: 'left' }}
-        className={`${type}-strike`}
-      >
+  return (
+    <StrikeCell
+      className={`stxl-${type}-strike ${
+        editSymbol === symbol ? 'stxl-disabled-strike' : ''
+      }`}
+    >
+      <StrikeRowContainer ispe={+isPe}>
+        <OiBarContainer>
+          <OiBar ispe={+isPe} oilen={oiLen}></OiBar>
+        </OiBarContainer>
+        <OptionInfo ispe={+isPe} className="stxl-oi-number">
+          <OptionInfoItem>DIFF = {ptsDiff}</OptionInfoItem>
+          <OptionInfoItem>OI = {commaFormatterIn.format(oi)}</OptionInfoItem>
+        </OptionInfo>
+        <StrikePriceContainer ispe={+isPe}>
+          <StrikePriceBox>{ccyFormat(price)}</StrikePriceBox>
+        </StrikePriceContainer>
         <Radio
           checked={selection?.newStrike === symbol}
           onChange={handleSelection}
@@ -307,31 +320,7 @@ export const OptionChainRadioRow = memo(function OptionChainRadioRow({
           sx={{ p: 0 }}
           disabled={editSymbol === symbol}
         />
-      </StrikeCell>
-      <StrikeCell align="center" className={`${type}-strike`}>
-        {price}
-      </StrikeCell>
-    </>
-  ) : (
-    <>
-      <StrikeCell align="center" className={`${type}-strike`}>
-        {price}
-      </StrikeCell>
-      <StrikeCell
-        align="right"
-        sx={{ align: 'right' }}
-        className={`${type}-strike`}
-      >
-        <Radio
-          checked={selection?.newStrike === symbol}
-          onChange={handleSelection}
-          value={symbol}
-          name="strike"
-          inputProps={{ 'aria-label': symbol as string }}
-          sx={{ p: 0 }}
-          disabled={editSymbol === symbol}
-        />
-      </StrikeCell>
-    </>
+      </StrikeRowContainer>
+    </StrikeCell>
   );
 });

@@ -1,6 +1,4 @@
-import { useEffect } from 'react';
-import axios from 'axios';
-import { useRecoilValue, useResetRecoilState } from 'recoil';
+import { useRecoilValue } from 'recoil';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -10,13 +8,9 @@ import TableRow from '@mui/material/TableRow';
 import { styled } from '@mui/material/styles';
 import { Paper } from '@mui/material';
 import './OptionChain.css';
-import {
-  currentInlineEdit,
-  optionChainSelector,
-  optionChainStrikesListSelector,
-} from '../../utils/state';
+import { optionChainStrikesListSelector } from '../../utils/state';
 import { OptionChainRadioRow } from './OptionChainRow';
-import { processSymbol } from '../../utils/order';
+import { useOptionChainContext } from './useOptionChainContext';
 
 export const StrikeCell = styled(TableCell)(() => ({
   paddingTop: 2,
@@ -25,37 +19,18 @@ export const StrikeCell = styled(TableCell)(() => ({
 
 const OptionChainRadioGrid = () => {
   const optionChain = useRecoilValue(optionChainStrikesListSelector);
-  const resetOptionChain = useResetRecoilState(optionChainSelector);
-  const { symbol } = useRecoilValue(currentInlineEdit);
-  useEffect(() => {
-    // const { index } = processSymbol(symbol);
-    resetOptionChain();
-    // TODO: set the oc context from symbol
-    return () => {
-      resetOptionChain();
-    };
-  }, [resetOptionChain]);
-
+  useOptionChainContext();
   return (
     <Paper sx={{ width: '100%' }}>
       <TableContainer>
         <Table aria-label="sticky table">
           <TableHead>
             <TableRow>
-              <TableCell colSpan={2} align="center">
-                CALLS
+              <TableCell align="center">PUTS</TableCell>
+              <TableCell align="center" sx={{ width: 110 }}>
+                Strikes ({optionChain.length})
               </TableCell>
-              <TableCell colSpan={1}></TableCell>
-              <TableCell colSpan={2} align="center">
-                PUTS
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell align="center">LTP</TableCell>
-              <TableCell align="right">Actions</TableCell>
-              <TableCell align="center">Strikes</TableCell>
-              <TableCell>Actions</TableCell>
-              <TableCell align="center">LTP</TableCell>
+              <TableCell align="center">CALLS</TableCell>
             </TableRow>
           </TableHead>
 
