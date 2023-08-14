@@ -28,22 +28,11 @@ const OptionChainGrid = () => {
         <Table aria-label="sticky table">
           <TableHead>
             <TableRow>
-              <TableCell colSpan={2} align="center">
-                CALLS
-              </TableCell>
-              <TableCell colSpan={1}></TableCell>
-              <TableCell colSpan={2} align="center">
-                PUTS
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell align="center">LTP</TableCell>
-              <TableCell align="right">Actions</TableCell>
-              <TableCell align="center">
+              <TableCell align="center">CALLS</TableCell>
+              <TableCell align="center" sx={{ width: 110 }}>
                 Strikes ({optionChain.length})
               </TableCell>
-              <TableCell>Actions</TableCell>
-              <TableCell align="center">LTP</TableCell>
+              <TableCell align="center">PUTS</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

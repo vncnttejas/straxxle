@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { keys, values } from 'lodash';
-import { IndexSymbolObjType } from '../types/index-symbol-obj.type';
+import { keys, map, memoize, pick, values } from 'lodash';
+import { IndexSymbolObjType, IndexSymbolObjValue } from '../types/index-symbol-obj.type';
 import { SymbolData } from '../types/symbol-data.type';
 import fyersApiV2 from 'fyers-api-v2';
 
@@ -76,7 +76,7 @@ export class CommonService {
     const [_, index, rawExpiry, strikeNum, contractType] = optSymbolRegex.exec(symbol);
     return {
       index,
-      indexSymbol: this.getSymbolByIndexName(index).symbol,
+      indexSymbol: this.memoGetIndexObjByIndexName(index).symbol,
       rawExpiry,
       strikeNum: parseInt(strikeNum, 10),
       contractType,
@@ -120,19 +120,33 @@ export class CommonService {
   }
 
   /**
-   * Returns list of default index symbols
-   * @returns default symbol
+   * Returns field of default indexes specified
+   * @returns field of the index object
    */
-  getDefaultSymbols(): string[] {
+  getIndexFields(
+    keys: Array<keyof IndexSymbolObjValue>,
+  ): Pick<IndexSymbolObjValue, keyof IndexSymbolObjValue>[] {
     const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
-    return keys(defaultSymbols);
+    return map(defaultSymbols, (obj) => pick(obj, keys));
   }
 
-  getSymbolByIndexName(indexName: string) {
+  /**
+   * Get the index symbol by providing the shortname
+   * @param shortName string
+   * @returns indexSymbol field of the index object
+   */
+  private getIndexObjByIndexName(shortName: string) {
     const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
-    const indexSymbol = values(defaultSymbols).filter((symbolObj) => symbolObj.shortName === indexName);
+    const indexSymbol = values(defaultSymbols).filter(
+      (symbolObj) => symbolObj.shortName === shortName,
+    );
     return indexSymbol[0];
   }
+
+  /**
+   * Memoized version of getIndexObjByIndexName
+   */
+  memoGetIndexObjByIndexName = memoize(this.getIndexObjByIndexName);
 
   getIndexShortNameBySymbol(indexSymbol: string): string {
     const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
@@ -143,4 +157,14 @@ export class CommonService {
     const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
     return defaultSymbols?.[indexSymbol].lotSize;
   }
+
+  /**
+   * @param date
+   * @returns YYYY-MM-DD string back
+   */
+  getStandardDateFmt(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
+
+  memoGetStandardDateFmt = memoize(this.getStandardDateFmt);
 }

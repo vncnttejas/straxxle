@@ -8,7 +8,9 @@ import { SetContextDto } from './dtos/tape-set-context.dto';
 export class TapeController {
   private logger = new Logger(TapeController.name);
 
-  constructor(private readonly configService: ConfigService, private tapeService: TapeService) {}
+  constructor(private readonly configService: ConfigService, private tapeService: TapeService) {
+    this.tapeService.watchOptionChainData();
+  }
 
   @Get('index-objects')
   getContracts(): IndexSymbolObjType {

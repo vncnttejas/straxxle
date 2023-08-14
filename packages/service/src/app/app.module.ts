@@ -20,6 +20,7 @@ import { CommonModule } from './common/common.module';
     }),
     CacheModule.register({
       isGlobal: true,
+      ttl: 60, // 1minute
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],

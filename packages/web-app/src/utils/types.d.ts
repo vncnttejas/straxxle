@@ -11,7 +11,8 @@ export interface TxnButtonProps {
   active: boolean;
   onClick: (e: any) => void;
   disabled: boolean;
-};
+  visible: boolean;
+}
 
 export type IdType = string | number;
 
@@ -28,7 +29,7 @@ export interface IPosOrderList {
   txnPrice: number;
   tt: number;
   fees: Fees;
-};
+}
 
 export interface IFees {
   brokerage: number;
@@ -38,7 +39,7 @@ export interface IFees {
   sebi: number;
   stamp: number;
   totalFees: number;
-};
+}
 
 export interface IPositionValue {
   symbol: IdType;
@@ -59,7 +60,7 @@ export interface IPositionValue {
   newSymbol?: IdType;
   strikeEdited?: boolean;
   qtyEdited?: boolean;
-};
+}
 
 export type IPosition = Record<string, IPositionValue>;
 
@@ -72,12 +73,12 @@ export interface IPositionSummary {
   activeOrderCount: number;
   exitFees: IFees;
   fees: IFees;
-};
+}
 
 export interface PositionResponse {
   position: IPosition;
   summary: IPositionSummary;
-};
+}
 
 export type ContractType = 'CE' | 'PE';
 
@@ -92,6 +93,10 @@ export interface IOptionChainValues {
   expiryDate: string;
   lp: number;
   short_name: string;
+  openInterest: number;
+  oiPercentile: number;
+  changeinOpenInterest: number;
+  strikeDiffPts: number;
 }
 
 export interface IOrder {

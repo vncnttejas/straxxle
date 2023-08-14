@@ -50,12 +50,45 @@ export const optionChainPriceSelector = selectorFamily({
   },
 });
 
+
+export const optionChainOiLenSelector = selectorFamily({
+  key: 'optionChainOiLenSelector',
+  get:
+    (symbol: IdType) =>
+    ({ get }) => {
+      const optionChain = get(optionChainSelector);
+      return optionChain[symbol]?.oiPercentile || 0;
+    },
+});
+
+export const optionChainOiSelector = selectorFamily({
+  key: 'optionChainOiSelector',
+  get:
+    (symbol: IdType) =>
+    ({ get }) => {
+      const optionChain = get(optionChainSelector);
+      return optionChain[symbol]?.openInterest || 0;
+    },
+});
+
+export const optionChainDiffSelector = selectorFamily({
+  key: 'optionChainDiffSelector',
+  get:
+    (symbol: IdType) =>
+    ({ get }) => {
+      const optionChain = get(optionChainSelector);
+      return optionChain[symbol]?.strikeDiffPts || 0;
+    },
+});
+
 export const optionChainStrikeSelector = selectorFamily({
   key: 'optionChainStrikeSelector',
-  get: (symbol: IdType) => ({ get }) => {
-    const optionChain = get(optionChainSelector);
-    return optionChain[symbol]?.strike;
-  },
+  get:
+    (symbol: IdType) =>
+    ({ get }) => {
+      const optionChain = get(optionChainSelector);
+      return optionChain[symbol]?.strike;
+    },
 });
 
 export const optionChainListSelector = selector({
@@ -114,7 +147,7 @@ export const orderListSelector = selector({
         qty: order.orderQty / 50,
         txnPrice: order.txnPrice,
         time: order.tt * 1000,
-      }))
+      }));
       orders.push(orderItem);
     });
     return orderBy(flatten(orders), 'id', 'desc');
@@ -148,7 +181,7 @@ export const positionSummaryState = atom<IPositionSummary>({
       stamp: 0,
       totalFees: 0,
     },
-  }
+  },
 });
 
 export const openFeesCollapseState = atom({
@@ -163,23 +196,31 @@ export const basketState = atom<Basket>({
 
 export const basketSelector = selectorFamily({
   key: 'basketSelector',
-  get: (id: IdType) => ({ get }) => {
-    const basket = get(basketState);
-    return basket[id];
-  },
-  set: (id: IdType) => ({ set }, newValue) => {
-    if (newValue instanceof DefaultValue) {
-      set(basketState, (prev) => produce(prev, (draft) => {
-        delete draft[id];
-        return draft;
-      }));
-      return;
-    }
-    set(basketState, (prev) => produce(prev, (draft) => {
-      draft[id] = newValue;
-      return draft;
-    }));
-  },
+  get:
+    (id: IdType) =>
+    ({ get }) => {
+      const basket = get(basketState);
+      return basket[id];
+    },
+  set:
+    (id: IdType) =>
+    ({ set }, newValue) => {
+      if (newValue instanceof DefaultValue) {
+        set(basketState, (prev) =>
+          produce(prev, (draft) => {
+            delete draft[id];
+            return draft;
+          })
+        );
+        return;
+      }
+      set(basketState, (prev) =>
+        produce(prev, (draft) => {
+          draft[id] = newValue;
+          return draft;
+        })
+      );
+    },
 });
 
 export const selectedStrikesState = atom<Basket>({
@@ -198,26 +239,35 @@ export const newOrderSnackbarState = atom({
 
 export const basketStateSelector = selectorFamily({
   key: 'basketStateSelector',
-  get: (id: IdType) => ({ get }) => get(basketSelector(id)),
-  set: (id: IdType) => ({ set, reset }, newValue) => {
-    if (!id) return;
-    if (!newValue) return;
-    if (newValue instanceof DefaultValue) {
-      reset(basketSelector(id));
-      set(selectedStrikesState, (prev) => produce(prev, (draft) => {
-        delete draft[id];
-        return draft;
-      }));
-      return;
-    }
-    if (+newValue.qty) {
-      set(basketSelector(id), newValue);
-      set(selectedStrikesState, (prev) => produce(prev, (draft) => {
-        draft[id] = newValue;
-        return draft;
-      }));
-    }
-  },
+  get:
+    (id: IdType) =>
+    ({ get }) =>
+      get(basketSelector(id)),
+  set:
+    (id: IdType) =>
+    ({ set, reset }, newValue) => {
+      if (!id) return;
+      if (!newValue) return;
+      if (newValue instanceof DefaultValue) {
+        reset(basketSelector(id));
+        set(selectedStrikesState, (prev) =>
+          produce(prev, (draft) => {
+            delete draft[id];
+            return draft;
+          })
+        );
+        return;
+      }
+      if (+newValue.qty) {
+        set(basketSelector(id), newValue);
+        set(selectedStrikesState, (prev) =>
+          produce(prev, (draft) => {
+            draft[id] = newValue;
+            return draft;
+          })
+        );
+      }
+    },
 });
 
 export const selectedStrikesSelector = selector({
@@ -255,9 +305,19 @@ export const trimmedOptionFields = selector({
     const optionChain = get(optionChainSelector);
     const prepList = {};
     forEach(optionChain, (strike) => {
-      const trimmedData = pick(strike, ['symbol', 'strike', 'contractType', 'strikeNum', 'strikeType']);
+      const trimmedData = pick(strike, [
+        'symbol',
+        'strike',
+        'contractType',
+        'strikeNum',
+        'strikeType',
+      ]);
       const { contractType, strikeNum } = trimmedData;
-      setObject<IndexedOptionSkeletonType>(prepList, `${strikeNum}.${contractType}`, trimmedData);
+      setObject<IndexedOptionSkeletonType>(
+        prepList,
+        `${strikeNum}.${contractType}`,
+        trimmedData
+      );
     });
     return prepList;
   },

@@ -1,6 +1,6 @@
 import { Optiontick } from './optiontick.type';
 
-export class EnrichedOptiontick extends Optiontick {
+export interface EnrichedOptiontick extends Optiontick {
   index: string;
   indexSymbol: string;
   rawExpiry: string;

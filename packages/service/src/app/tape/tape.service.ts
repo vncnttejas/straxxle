@@ -1,11 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { chunk, get, keys, set, values } from 'lodash';
+import { chunk, forEach, get, keys, set, values } from 'lodash';
 import fyersApiV2 from 'fyers-api-v2';
 import { Enrichedtick, TickRecordType, Optiontick } from '../types';
 import { ConfigService } from '@nestjs/config';
 import { IndexSymbolObjType } from '../types/index-symbol-obj.type';
 import { StoreService } from '../common/store.service';
 import { CommonService } from '../common/common.service';
+import { OptionChainListType, OptionDataType, StrikeDataType } from './types/option-chain.type';
+import { HttpService } from '@nestjs/axios';
+import { catchError, map, merge, retry, switchMap, tap, throwError, timer } from 'rxjs';
 
 @Injectable()
 export class TapeService {
@@ -14,6 +17,7 @@ export class TapeService {
   private tape = {} as TickRecordType;
   private liveTapeContext: string = null;
   private _streamLive = false;
+  private optionChainVolumeData: Record<string, OptionDataType> = {};
   private readonly reqFields = [
     'symbol',
     'index',
@@ -26,8 +30,10 @@ export class TapeService {
     'lp',
     'short_name',
   ];
+  private oiStats = {};
 
   constructor(
+    private readonly httpService: HttpService,
     private storeService: StoreService,
     private commonService: CommonService,
     private readonly configService: ConfigService,
@@ -85,7 +91,8 @@ export class TapeService {
     if (keys(defaultSymbols).includes(symbol)) {
       return tick;
     }
-    const { index, indexSymbol, rawExpiry, strikeNum, contractType } = this.commonService.processOptionSymbol(symbol);
+    const { index, indexSymbol, rawExpiry, strikeNum, contractType } =
+      this.commonService.processOptionSymbol(symbol);
     const current = this.storeService.getStoreData<number>(`currentValues.${indexSymbol}`);
     if (!current) {
       throw new Error(`Live symbol data not found for ${symbol}`);
@@ -97,6 +104,7 @@ export class TapeService {
     const strikeType = this.commonService.computeStrikeType(strikeNum, current, contractType);
     const strikesAway = strikeDiffPts / strikeDiff;
     const strike = `${strikeNum}${contractType}`;
+    const optionVolume = this.enrichWithOptionVolume(indexSymbol, strike, expiryDate);
     return {
       index,
       indexSymbol,
@@ -110,7 +118,20 @@ export class TapeService {
       expiryType,
       expiryDate,
       ...tick,
+      ...optionVolume,
     };
+  }
+
+  enrichWithOptionVolume(indexSymbol: string, strike: string, expiryDate: Date) {
+    const date = this.commonService.memoGetStandardDateFmt(new Date(expiryDate));
+    const statPath = `${indexSymbol}.${date}`;
+    const optionChainData = get(this.optionChainVolumeData, `${indexSymbol}.${date}.${strike}`);
+    const optionOiState = get(this.oiStats, statPath) as { highOi: number; highChangeInOi: number };
+    const oiPercentile = optionOiState?.highOi
+      ? (optionChainData?.openInterest || 0) / optionOiState.highOi
+      : 0;
+    set(optionChainData, 'oiPercentile', oiPercentile);
+    return optionChainData;
   }
 
   async triggerListen(): Promise<void> {
@@ -136,5 +157,64 @@ export class TapeService {
         }
       });
     });
+  }
+
+  /**
+   * Fetch nifty option chain from nse site
+   * @returns Option chain data
+   */
+  watchOptionChainData(): void {
+    // 90 seconds
+    timer(0, 60 * 1000)
+      .pipe(
+        switchMap(() => {
+          const defaultSymbols = this.commonService.getIndexFields(['shortName']);
+          const ocReqs = defaultSymbols.map(({ shortName }) =>
+            this.httpService.get(
+              `https://www.nseindia.com/api/option-chain-indices?symbol=${shortName}`,
+            ),
+          );
+          return merge(...ocReqs);
+        }),
+        catchError((error) => {
+          this.logger.error(error);
+          return throwError(() => error);
+        }),
+        retry({
+          count: 3,
+          delay: 1000 * 90,
+          resetOnSuccess: true,
+        }),
+        map((data) => {
+          const recordData = get(data, 'data.records.data') as StrikeDataType[];
+          const optionChainList: OptionChainListType = {};
+          forEach(recordData, (option) => {
+            const { symbol } = this.commonService.memoGetIndexObjByIndexName(
+              option?.CE?.underlying || option?.PE?.underlying,
+            );
+            const dateFmt = this.commonService.memoGetStandardDateFmt(new Date(option.expiryDate));
+            const path = `${symbol}.${dateFmt}.${option.strikePrice}`;
+            set(optionChainList, `${path}PE`, option.PE);
+            set(optionChainList, `${path}CE`, option.CE);
+          });
+          return optionChainList;
+        }),
+        tap((data) => {
+          forEach(data, (optionChain, symbol) => {
+            forEach(optionChain, (optionList, expiry) => {
+              let highOi = -Infinity;
+              forEach(optionList, (option) => {
+                highOi = highOi > (option?.openInterest ?? 0) ? highOi : option?.openInterest;
+              });
+              set(this.oiStats, `${symbol}.${expiry}.highOi`, highOi);
+            });
+          });
+        }),
+      )
+      .subscribe({
+        next: (optionChain) => {
+          set(this.optionChainVolumeData, keys(optionChain)[0], values(optionChain)[0]);
+        },
+      });
   }
 }

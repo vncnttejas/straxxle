@@ -1,4 +1,4 @@
-import { Controller, Get, Logger, Query, Res } from '@nestjs/common';
+import { Controller, Get, Logger, Query, Res, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FastifyReply } from 'fastify';
 import { flattenDeep, keys, values } from 'lodash';
@@ -29,12 +29,13 @@ export class TokenController {
   async getToken() {
     this.logger.verbose('Get access token');
     const accessToken = this.tokenService.accessTokenValue;
-    if (accessToken) {
-      this.logger.verbose('Found token in cache');
-      return {
-        accessToken,
-      };
+    if (!accessToken) {
+      new UnauthorizedException('Access token expired or not found');
     }
+    this.logger.verbose('Found token in cache');
+    return {
+      accessToken,
+    };
   }
 
   /**
@@ -60,7 +61,10 @@ export class TokenController {
    * @returns a redirect to web app
    */
   @Get('callback')
-  async callback(@Query() queryParams: FyersResponseParamsDto, @Res() reply: FastifyReply): Promise<void> {
+  async callback(
+    @Query() queryParams: FyersResponseParamsDto,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
     this.logger.verbose('Callback from fyers');
     await this.tokenService.saveFyersCred(queryParams);
     this.tokenService.initFyersLib();
