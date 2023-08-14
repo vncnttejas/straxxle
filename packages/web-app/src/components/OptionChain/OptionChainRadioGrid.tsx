@@ -8,7 +8,10 @@ import TableRow from '@mui/material/TableRow';
 import { styled } from '@mui/material/styles';
 import { Paper } from '@mui/material';
 import './OptionChain.css';
-import { optionChainStrikesListSelector } from '../../utils/state';
+import {
+  currentInlineEdit,
+  optionChainStrikesListSelector,
+} from '../../utils/state';
 import { OptionChainRadioRow } from './OptionChainRow';
 import { useOptionChainContext } from './useOptionChainContext';
 
@@ -19,7 +22,8 @@ export const StrikeCell = styled(TableCell)(() => ({
 
 const OptionChainRadioGrid = () => {
   const optionChain = useRecoilValue(optionChainStrikesListSelector);
-  useOptionChainContext();
+  const { indexSymbol } = useRecoilValue(currentInlineEdit);
+  useOptionChainContext(indexSymbol);
   return (
     <Paper sx={{ width: '100%' }}>
       <TableContainer>

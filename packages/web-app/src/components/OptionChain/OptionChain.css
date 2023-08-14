@@ -7,7 +7,6 @@
 }
 .stxl-disabled-strike {
   cursor: wait;
-  background: #c3c3c39a;
 }
 .MuiTableRow-root:hover .stxl-txn-btn {
   visibility: visible;

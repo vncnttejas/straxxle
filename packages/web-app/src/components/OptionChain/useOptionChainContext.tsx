@@ -1,11 +1,10 @@
-import { useRecoilValue, useResetRecoilState } from 'recoil';
-import { currentInlineEdit, optionChainSelector } from '../../utils/state';
+import { useResetRecoilState } from 'recoil';
+import { optionChainSelector } from '../../utils/state';
 import { useEffect } from 'react';
 import axios from 'axios';
 
-export const useOptionChainContext = () => {
+export const useOptionChainContext = (indexSymbol: string) => {
   const resetOptionChain = useResetRecoilState(optionChainSelector);
-  const { indexSymbol } = useRecoilValue(currentInlineEdit);
   useEffect(() => {
     resetOptionChain();
     axios.post('/api/tape/set-live-context', {

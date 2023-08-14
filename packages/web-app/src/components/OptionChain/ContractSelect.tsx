@@ -14,7 +14,7 @@ const ContractSelect = memo(() => {
   const { data: indexedContracts } = useSWR('/api/tape/index-objects');
   const contracts = Object.values(indexedContracts) as ContractType[];
   const [curContract, setCurContract] = useRecoilState(optionChainContract);
-  useOptionChainContext();
+  useOptionChainContext(curContract);
 
   return (
     <Box sx={{ pt: 2, pr: 2, textAlign: 'right' }}>
