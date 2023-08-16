@@ -18,18 +18,6 @@ export class TapeService {
   private liveTapeContext: string = null;
   private _streamLive = false;
   private optionChainVolumeData: Record<string, OptionDataType> = {};
-  private readonly reqFields = [
-    'symbol',
-    'index',
-    'strike',
-    'strikeNum',
-    'strikeType',
-    'contractType',
-    'expiryType',
-    'expiryDate',
-    'lp',
-    'short_name',
-  ];
   private oiStats = {};
 
   constructor(
@@ -37,7 +25,9 @@ export class TapeService {
     private storeService: StoreService,
     private commonService: CommonService,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    this.watchOptionChainData();
+  }
 
   getLiveTapeContext() {
     return this.liveTapeContext;
