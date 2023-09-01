@@ -42,6 +42,7 @@ export type ExpiryDate = Record<string, string>;
 
 export type BasicOptionChain = {
   optionChainData: Record<string, OptionDataType>;
+  maxOi: number;
 };
 
 export interface OptionChainRecords {

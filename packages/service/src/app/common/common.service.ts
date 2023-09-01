@@ -103,7 +103,11 @@ export class CommonService {
   private getIndexObjByIndexName(shortName: string) {
     const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
     const indexSymbol = values(defaultSymbols).filter((symbolObj) => symbolObj.indexShortName === shortName);
-    return indexSymbol[0];
+    if (indexSymbol.length) {
+      return indexSymbol[0];
+    }
+    this.logger.error(`Invalid shortName provided: ${shortName}`);
+    throw new Error(`Invalid shortName provided: ${shortName}`);
   }
 
   /**

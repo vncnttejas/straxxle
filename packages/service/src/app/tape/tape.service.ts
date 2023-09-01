@@ -78,7 +78,7 @@ export class TapeService {
   }
 
   getMaxOiForChain(indexSymbol: string, expiryStr: string): number {
-    return get(this.optionChains, `${indexSymbol}.ocs.${expiryStr}.maxOi`);
+    return this.optionChains?.[indexSymbol]?.ocs?.[expiryStr]?.maxOi || 1;
   }
 
   setTapeData(symbol: string, data: Partial<Enrichedtick>): void {
