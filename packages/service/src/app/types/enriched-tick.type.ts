@@ -1,5 +1,5 @@
 import { OptionDataType } from '../tape/types/option-chain.type';
 import { EnrichedOptiontick } from './enriched-option.type';
-import { Optiontick } from './optiontick.type';
+import { IndexSymbolObjValue } from './index-symbol-obj.type';
 
-export type Enrichedtick = (EnrichedOptiontick & OptionDataType) | Optiontick;
+export type Enrichedtick = EnrichedOptiontick & OptionDataType & IndexSymbolObjValue;

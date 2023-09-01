@@ -36,14 +36,14 @@ const OptionChainGrid = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {optionChain.map(([strikeNum, { CE, PE }]) => (
-              <TableRow key={strikeNum} hover>
+            {optionChain.map(([strikePrice, { CE, PE }]) => (
+              <TableRow key={strikePrice} hover>
                 <OptionChainRow
                   symbol={CE?.['symbol']}
                   contractType="CE"
                   type={CE?.['strikeType']}
                 />
-                <StrikeCell align="center">{strikeNum}</StrikeCell>
+                <StrikeCell align="center">{strikePrice}</StrikeCell>
                 <OptionChainRow
                   symbol={PE?.['symbol']}
                   contractType="PE"

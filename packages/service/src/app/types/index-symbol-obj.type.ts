@@ -1,7 +1,7 @@
 export interface IndexSymbolObjValue {
-  shortName: string;
-  prefix: string;
-  symbol: string;
+  indexShortName: string;
+  indexPrefix: string;
+  indexSymbol: string;
   strikeDiff: number;
   strikeExtreme: number;
   lotSize: number;

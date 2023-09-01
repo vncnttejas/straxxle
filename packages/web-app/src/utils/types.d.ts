@@ -86,7 +86,7 @@ export interface IOptionChainValues {
   index: string;
   symbol: IdType;
   strike: string;
-  strikeNum: string;
+  strikePrice: string;
   strikeType: string;
   contractType: ContractType;
   expiryType: string;
@@ -139,9 +139,12 @@ export type IOrderRequest = Record<IdType, IOrderValue[]>;
 
 export type Basket = Record<IdType, IBasketValue>;
 
-export type ConfirmModalType = { open: boolean, symbols?: IdType[] };
+export type ConfirmModalType = { open: boolean; symbols?: IdType[] };
 
-export type TrimmedOptionType = Pick<IOptionChainValues, "symbol" | "contractType" | "strike" | "strikeNum" | "strikeType">
+export type TrimmedOptionType = Pick<
+  IOptionChainValues,
+  'symbol' | 'contractType' | 'strike' | 'strikePrice' | 'strikeType'
+>;
 
 export type IndexedStrikeContractType = Record<ContractType, TrimmedOptionType>;
 

@@ -6,8 +6,8 @@ import { optionChainContract } from '../../utils/state';
 import { useOptionChainContext } from './useOptionChainContext';
 
 type ContractType = {
-  symbol: string;
-  shortName: string;
+  indexSymbol: string;
+  indexShortName: string;
 };
 
 const ContractSelect = memo(() => {
@@ -28,8 +28,8 @@ const ContractSelect = memo(() => {
         >
           {contracts.map((contract: ContractType) => {
             return (
-              <MenuItem key={contract.symbol} value={contract.symbol}>
-                {contract.shortName}
+              <MenuItem key={contract.indexSymbol} value={contract.indexSymbol}>
+                {contract.indexShortName}
               </MenuItem>
             );
           })}

@@ -309,13 +309,13 @@ export const trimmedOptionFields = selector({
         'symbol',
         'strike',
         'contractType',
-        'strikeNum',
+        'strikePrice',
         'strikeType',
       ]);
-      const { contractType, strikeNum } = trimmedData;
+      const { contractType, strikePrice } = trimmedData;
       setObject<IndexedOptionSkeletonType>(
         prepList,
-        `${strikeNum}.${contractType}`,
+        `${strikePrice}.${contractType}`,
         trimmedData
       );
     });
@@ -323,7 +323,9 @@ export const trimmedOptionFields = selector({
   },
 });
 
-export const optionChainStrikesListSelector = selector<[IdType, IndexedStrikeContractType][]>({
+export const optionChainStrikesListSelector = selector<
+  [IdType, IndexedStrikeContractType][]
+>({
   key: 'optionChainStrikesListSelector',
   get: ({ get }) => {
     return Object.entries(get(trimmedOptionFields));
@@ -345,55 +347,59 @@ export const inlineEditsState = atom<InlineEditType>({
 
 export const inlineEditsSelector = selectorFamily({
   key: 'inlineEditsSelector',
-  get: (symbol: IdType) => ({ get }) => {
-    const inlineEdit = get(inlineEditsState);
-    return inlineEdit[symbol];
-  },
-  set: (symbol: IdType) => ({ get, set }, newValue) => {
-    const inlineEdits = get(inlineEditsState);
-    let id: IdType;
+  get:
+    (symbol: IdType) =>
+    ({ get }) => {
+      const inlineEdit = get(inlineEditsState);
+      return inlineEdit[symbol];
+    },
+  set:
+    (symbol: IdType) =>
+    ({ get, set }, newValue) => {
+      const inlineEdits = get(inlineEditsState);
+      let id: IdType;
 
-    if (newValue instanceof DefaultValue) {
+      if (newValue instanceof DefaultValue) {
+        const updatedEdits = produce(inlineEdits, (draft) => {
+          delete draft[symbol];
+          return draft;
+        });
+        set(inlineEditsState, updatedEdits);
+        return;
+      }
+
+      if (newValue?.resetQty) {
+        id = newValue?.resetQty;
+        const updatedEdits = produce(inlineEdits, (draft) => {
+          delete draft[id].newQty;
+          if (!draft[id].newSymbol) {
+            delete draft[id];
+          }
+          return draft;
+        });
+        set(inlineEditsState, updatedEdits);
+        return;
+      }
+
+      if (newValue?.resetStrike) {
+        id = newValue?.resetStrike;
+        const updatedEdits = produce(inlineEdits, (draft) => {
+          delete draft[id].newSymbol;
+          if (!draft[id].newQty) {
+            delete draft[id];
+          }
+          return draft;
+        });
+        set(inlineEditsState, updatedEdits);
+        return;
+      }
+
       const updatedEdits = produce(inlineEdits, (draft) => {
-        delete draft[symbol];
+        draft[symbol] = newValue;
         return draft;
       });
       set(inlineEditsState, updatedEdits);
-      return;
-    }
-
-    if (newValue?.resetQty) {
-      id = newValue?.resetQty;
-      const updatedEdits = produce(inlineEdits, (draft) => {
-        delete draft[id].newQty;
-        if (!draft[id].newSymbol) {
-          delete draft[id];
-        }
-        return draft;
-      });
-      set(inlineEditsState, updatedEdits);
-      return;
-    }
-
-    if (newValue?.resetStrike) {
-      id = newValue?.resetStrike;
-      const updatedEdits = produce(inlineEdits, (draft) => {
-        delete draft[id].newSymbol;
-        if (!draft[id].newQty) {
-          delete draft[id];
-        }
-        return draft;
-      });
-      set(inlineEditsState, updatedEdits);
-      return;
-    }
-
-    const updatedEdits = produce(inlineEdits, (draft) => {
-      draft[symbol] = newValue;
-      return draft;
-    });
-    set(inlineEditsState, updatedEdits);
-  },
+    },
 });
 
 export const strikeWiseDataSelector = selector({
@@ -406,10 +412,12 @@ export const strikeWiseDataSelector = selector({
         if (!inlineEdit) {
           return;
         }
-        const { strikeNum, contractType } = processSymbol(inlineEdit.newSymbol || symbol);
+        const { strikePrice, contractType } = processSymbol(
+          inlineEdit.newSymbol || symbol
+        );
         pos.prevStrike = pos.strike;
         pos.prevQty = pos.posQty;
-        pos.strike = `${strikeNum}${contractType}` || pos.strike;
+        pos.strike = `${strikePrice}${contractType}` || pos.strike;
         pos.newSymbol = inlineEdit.newSymbol;
         pos.posQty = inlineEdit.newQty ?? pos.posQty;
         pos.strikeEdited = pos.strike !== pos.prevStrike;

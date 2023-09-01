@@ -1,7 +1,7 @@
 import { Controller, Get, Logger, Query, Res, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FastifyReply } from 'fastify';
-import { flattenDeep, keys, values } from 'lodash';
+import { entries, forEach, values } from 'lodash';
 import { TokenService } from './token.service';
 import { FyersResponseParamsDto } from './dtos/fyers-response-param.dto';
 import { IndexSymbolObjType } from '../types/index-symbol-obj.type';
@@ -61,27 +61,35 @@ export class TokenController {
    * @returns a redirect to web app
    */
   @Get('callback')
-  async callback(
-    @Query() queryParams: FyersResponseParamsDto,
-    @Res() reply: FastifyReply,
-  ): Promise<void> {
+  async callback(@Query() queryParams: FyersResponseParamsDto, @Res() reply: FastifyReply): Promise<void> {
     this.logger.verbose('Callback from fyers');
     await this.tokenService.saveFyersCred(queryParams);
     this.tokenService.initFyersLib();
 
     this.logger.verbose('Listen to default symbols');
-    const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
-    const watchList = await Promise.all(
-      values(defaultSymbols).map(async ({ strikeDiff, symbol }) => {
-        const current = await this.commonService.fetchSymbolData(symbol);
-        this.storeService.setStoreData(`currentValues.${symbol}`, current);
-        const atm = this.commonService.getATMStrikeNumfromCur(current, strikeDiff);
-        return this.commonService.prepareSymbolList(symbol, atm, '23AUG');
-      }),
-    );
-    const indexSymbols = keys(defaultSymbols);
-    this.storeService.setStoreData('watchList', flattenDeep([indexSymbols, watchList]));
     const webAppRedirect = this.configService.get('webApp');
+    const optionChains = entries(this.tapeService.optionChains);
+    const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
+    forEach(optionChains, ([indexSymbol, indexOcs]) => {
+      const atmStrike = this.commonService.getATMStrikeNumfromCur(
+        indexOcs.underlyingValue,
+        defaultSymbols[indexSymbol].strikeDiff,
+      );
+      const nextExpiry = this.commonService.getStandardDateFmt(new Date(indexOcs.expiryDates[0]));
+      const nextExpiryOptionChain = values(indexOcs.ocs[nextExpiry]);
+      const combinedOptionList =  values(nextExpiryOptionChain[0]);
+      forEach(combinedOptionList, (optionData) => {
+        const { strikeExtreme } = defaultSymbols[indexSymbol];
+        const peExtreme = atmStrike - strikeExtreme;
+        const ceExtreme = atmStrike + strikeExtreme;
+        if (peExtreme > optionData.strikePrice || ceExtreme < optionData.strikePrice) {
+          return null;
+        }
+
+        const strikeSymbol = this.commonService.memoConvertIdtoStrikeSymbol(optionData.identifier);
+        this.tapeService.setTapeData(strikeSymbol, optionData);
+      });
+    });
     await this.tapeService.triggerListen();
     reply.redirect(301, webAppRedirect);
   }

@@ -80,7 +80,7 @@ export class OrdersService {
       contractType: strikeSnapshot.contractType,
       tt: strikeSnapshot.tt,
       exchange: strikeSnapshot.exchange,
-      expiryDate: new Date(strikeSnapshot.expiryDate),
+      expiryDate: new Date(strikeSnapshot.expiryDateStr),
       expiryType: strikeSnapshot.expiryType,
       indexSymbol: strikeSnapshot.indexSymbol,
     };

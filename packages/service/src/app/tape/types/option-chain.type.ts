@@ -40,12 +40,15 @@ export interface OptionDataType {
 
 export type ExpiryDate = Record<string, string>;
 
+export type BasicOptionChain = {
+  optionChainData: Record<string, OptionDataType>;
+};
+
 export interface OptionChainRecords {
-  expiryDates: ExpiryDate[];
-  data: StrikeDataType[];
+  expiryDates: string[];
+  ocs: Record<string, BasicOptionChain>;
   timestamp: string;
   underlyingValue: number;
-  strikePrices: number[];
 }
 
 export type OptionChainListType = Record<string, Record<string, Record<string, OptionDataType>>>;

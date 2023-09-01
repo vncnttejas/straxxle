@@ -1,34 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { keys, map, memoize, pick, values } from 'lodash';
+import { map, memoize, pick, values } from 'lodash';
 import { IndexSymbolObjType, IndexSymbolObjValue } from '../types/index-symbol-obj.type';
-import { SymbolData } from '../types/symbol-data.type';
 import fyersApiV2 from 'fyers-api-v2';
 
 @Injectable()
 export class CommonService {
   private readonly logger = new Logger(CommonService.name);
 
-  readonly monthMap = {
-    JAN: 0,
-    FEB: 1,
-    MAR: 2,
-    APR: 3,
-    MAY: 4,
-    JUN: 5,
-    JUL: 6,
-    AUG: 7,
-    SEP: 8,
-    OCT: 9,
-    NOV: 10,
-    DEC: 11,
-  };
+  readonly monthMap = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
-  readonly singleDigitMonthMap = {
-    O: 10,
-    N: 11,
-    D: 12,
-  };
+  readonly singleDigitMonthMap = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'O', 'N', 'D'];
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -47,14 +29,14 @@ export class CommonService {
 
   prepareSymbolList(symbol: string, atm: number, rawExpiry: string): string[] {
     const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
-    const { prefix, strikeDiff, strikeExtreme } = defaultSymbols[symbol];
+    const { indexPrefix, strikeDiff, strikeExtreme } = defaultSymbols[symbol];
     const contractTypes = ['CE', 'PE'];
     const firstStrike = atm - strikeExtreme;
     const lastStrike = atm + strikeExtreme;
     const strikes = [];
     for (let i = firstStrike; i <= lastStrike; i += strikeDiff) {
       for (const contractType of contractTypes) {
-        strikes.push(`${prefix}${rawExpiry}${i}${contractType}`);
+        strikes.push(`${indexPrefix}${rawExpiry}${i}${contractType}`);
       }
     }
     return strikes;
@@ -69,22 +51,8 @@ export class CommonService {
     return lastThursday;
   }
 
-  processOptionSymbol(symbol: string): SymbolData {
-    const symbolRegexStr = this.configService.get('symbolRegexStr');
-    const optSymbolRegex = new RegExp(symbolRegexStr);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [_, index, rawExpiry, strikeNum, contractType] = optSymbolRegex.exec(symbol);
-    return {
-      index,
-      indexSymbol: this.memoGetIndexObjByIndexName(index).symbol,
-      rawExpiry,
-      strikeNum: parseInt(strikeNum, 10),
-      contractType,
-    };
-  }
-
-  computeStrikeType(strikeNum: number, current: number, contractType: string): string {
-    const strikeDiff = strikeNum - current;
+  computeStrikeType(strikePrice: number, current: number, contractType: string): string {
+    const strikeDiff = strikePrice - current;
     if (strikeDiff > 25) {
       return contractType === 'PE' ? 'itm' : 'otm';
     }
@@ -94,22 +62,21 @@ export class CommonService {
     return 'atm';
   }
 
-  processExpiry(rawExpiry: string): { expiryType: string; expiryDate: Date } {
+  processExpiry(rawExpiry: string): { expiryType: string; optionExpiry: Date } {
     const match = /^([0-9]{2})([a-z0-9])([0-9]{2})$/i.exec(rawExpiry);
     if (match?.[0]) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [_, year, month, day] = match;
       const monthNum = this.singleDigitMonthMap[month.toUpperCase()] || parseInt(month, 10) - 1;
       return {
         expiryType: 'weekly',
-        expiryDate: new Date(+`20${year}`, monthNum, +day + 1),
+        optionExpiry: new Date(+`20${year}`, monthNum, +day + 1),
       };
     }
     const year = rawExpiry.slice(0, 2);
     const month = rawExpiry.slice(2, 5);
     return {
       expiryType: 'monthly',
-      expiryDate: this.getLastThursdayOfMonth(+`20${year}`, this.monthMap[month]),
+      optionExpiry: this.getLastThursdayOfMonth(+`20${year}`, this.monthMap[month]),
     };
   }
 
@@ -123,9 +90,7 @@ export class CommonService {
    * Returns field of default indexes specified
    * @returns field of the index object
    */
-  getIndexFields(
-    keys: Array<keyof IndexSymbolObjValue>,
-  ): Pick<IndexSymbolObjValue, keyof IndexSymbolObjValue>[] {
+  getIndexFields(keys: Array<keyof IndexSymbolObjValue>): Pick<IndexSymbolObjValue, keyof IndexSymbolObjValue>[] {
     const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
     return map(defaultSymbols, (obj) => pick(obj, keys));
   }
@@ -137,9 +102,7 @@ export class CommonService {
    */
   private getIndexObjByIndexName(shortName: string) {
     const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
-    const indexSymbol = values(defaultSymbols).filter(
-      (symbolObj) => symbolObj.shortName === shortName,
-    );
+    const indexSymbol = values(defaultSymbols).filter((symbolObj) => symbolObj.indexShortName === shortName);
     return indexSymbol[0];
   }
 
@@ -150,7 +113,7 @@ export class CommonService {
 
   getIndexShortNameBySymbol(indexSymbol: string): string {
     const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
-    return defaultSymbols?.[indexSymbol].shortName;
+    return defaultSymbols?.[indexSymbol].indexShortName;
   }
 
   getLotSizeBySymbol(indexSymbol: string): number {
@@ -163,8 +126,58 @@ export class CommonService {
    * @returns YYYY-MM-DD string back
    */
   getStandardDateFmt(date: Date): string {
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = date.toLocaleString('default', { month: '2-digit' });
+    const day = date.toLocaleString('default', { day: '2-digit' });
+    return `${year}-${month}-${day}`;
   }
 
   memoGetStandardDateFmt = memoize(this.getStandardDateFmt);
+
+  processIdSymbol(identifier: string) {
+    const reg = '^OPTIDX(NIFTY|FINNIFTY|BANKNIFTY)(\\d{1,2}\\-\\d{1,2}-\\d{4})(CE|PE)(\\d+)?.\\d{2}$';
+    const idRegex = new RegExp(reg);
+    const [_match, indexName, expDate, contractType, strikePrice] = idRegex.exec(identifier);
+    return { indexName, expDate, contractType, strikePrice };
+  }
+
+  memoProcessIdSymbol = memoize(this.processIdSymbol);
+
+  isMonthlyExpiry(expiryEpoch: number) {
+    const expiryDate = new Date(expiryEpoch);
+    const expiryMonth = expiryDate.getMonth();
+    const copyiedDate = new Date(expiryEpoch);
+    copyiedDate.setDate(copyiedDate.getDate() + 7);
+    const expiryPlus7Month = copyiedDate.getMonth();
+    return expiryMonth !== expiryPlus7Month;
+  }
+
+  memoIsMonthlyExpiry = memoize(this.isMonthlyExpiry);
+
+  createSymbolDateStr(expiryEpoch: number): string {
+    const expiryDate = new Date(expiryEpoch);
+    const isMontlyExpiry = this.memoIsMonthlyExpiry(expiryEpoch);
+    const year2Digit = expiryDate.getFullYear() % 100;
+    const monthIdx = expiryDate.getMonth();
+    if (isMontlyExpiry) {
+      const monthShortName = this.monthMap[monthIdx];
+      return `${year2Digit}${monthShortName}`;
+    }
+    const dayStr = expiryDate.getDate().toString();
+    const monthStr = this.singleDigitMonthMap[monthIdx];
+    return `${year2Digit}${monthStr}${dayStr.padStart(2, '0')}`;
+  }
+
+  memoCreateSymbolDateStr = memoize(this.createSymbolDateStr);
+
+  convertIdtoStrikeSymbol(identifier: string): string {
+    const { indexName, expDate, contractType, strikePrice } = this.memoProcessIdSymbol(identifier);
+    const [dayStr, monthStr, yearStr] = expDate.split('-');
+    const monthNum = +monthStr;
+    const monthIdx = monthNum - 1;
+    const dateStr = this.memoCreateSymbolDateStr(new Date(+yearStr, monthIdx, +dayStr).getTime());
+    return `NSE:${indexName}${dateStr}${strikePrice}${contractType}`;
+  }
+
+  memoConvertIdtoStrikeSymbol = memoize(this.convertIdtoStrikeSymbol);
 }

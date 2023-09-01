@@ -5,11 +5,13 @@ export interface EnrichedOptiontick extends Optiontick {
   indexSymbol: string;
   rawExpiry: string;
   strike: string;
-  strikeNum: number;
+  strikePrice: number;
   strikeDiffPts: number;
   strikesAway: number;
   strikeType: string;
   contractType: string;
   expiryType: string;
-  expiryDate: Date;
+  optionExpiry: Date;
+  oiPercentile: number;
+  expiryDateStr: string;
 }

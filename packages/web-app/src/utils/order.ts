@@ -25,17 +25,21 @@ export const processSymbol = memoize((symbol) => {
   if (!match) {
     throw new Error(`Invalid symbol ${symbol}`);
   }
-  const [_, index, rawExpiry, strikeNum, contractType] = match;
+  const [_, index, rawExpiry, strikePrice, contractType] = match;
   return {
     index,
     rawExpiry,
-    strikeNum,
+    strikePrice,
     contractType,
   };
 });
 
-export const getNextStrikeSymbol = (symbol: IdType, step = 1, strikeStep = 50) => {
-  const { index, rawExpiry, strikeNum, contractType } = processSymbol(symbol);
-  const newStrikeNum = parseInt(strikeNum) + step * strikeStep;
+export const getNextStrikeSymbol = (
+  symbol: IdType,
+  step = 1,
+  strikeStep = 50
+) => {
+  const { index, rawExpiry, strikePrice, contractType } = processSymbol(symbol);
+  const newStrikeNum = parseInt(strikePrice) + step * strikeStep;
   return `NSE:${index}${rawExpiry}${newStrikeNum}${contractType}`;
 };

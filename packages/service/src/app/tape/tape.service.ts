@@ -4,29 +4,27 @@ import fyersApiV2 from 'fyers-api-v2';
 import { Enrichedtick, TickRecordType, Optiontick } from '../types';
 import { ConfigService } from '@nestjs/config';
 import { IndexSymbolObjType } from '../types/index-symbol-obj.type';
-import { StoreService } from '../common/store.service';
 import { CommonService } from '../common/common.service';
-import { OptionChainListType, OptionDataType, StrikeDataType } from './types/option-chain.type';
+import { OptionChainRecords, StrikeDataType } from './types/option-chain.type';
 import { HttpService } from '@nestjs/axios';
-import { catchError, map, merge, retry, switchMap, tap, throwError, timer } from 'rxjs';
+import { catchError, from, merge, retry, switchMap, tap, throwError, timer } from 'rxjs';
 
 @Injectable()
 export class TapeService {
   private readonly logger = new Logger(TapeService.name);
-
   private tape = {} as TickRecordType;
   private liveTapeContext: string = null;
   private _streamLive = false;
-  private optionChainVolumeData: Record<string, OptionDataType> = {};
   private oiStats = {};
+  // Values extracted from nifty option chain
+  private optionChainData: Record<string, OptionChainRecords> = {};
 
   constructor(
     private readonly httpService: HttpService,
-    private storeService: StoreService,
     private commonService: CommonService,
     private readonly configService: ConfigService,
   ) {
-    this.watchOptionChainData();
+    this.fetchNSEOptionChainData().subscribe();
   }
 
   getLiveTapeContext() {
@@ -43,6 +41,10 @@ export class TapeService {
 
   set streamLive(value: boolean) {
     this._streamLive = value;
+  }
+
+  get optionChains() {
+    return this.optionChainData;
   }
 
   /**
@@ -71,65 +73,29 @@ export class TapeService {
     return values(this.tape).filter(callback);
   }
 
-  setTapeData(symbol: string, data: Enrichedtick): void {
+  getStrikeByStrikeSymbol(strikeSymbol: string): Partial<Enrichedtick> {
+    return get(this.tape, strikeSymbol);
+  }
+
+  getMaxOiForChain(indexSymbol: string, expiryStr: string): number {
+    return get(this.optionChains, `${indexSymbol}.ocs.${expiryStr}.maxOi`);
+  }
+
+  setTapeData(symbol: string, data: Partial<Enrichedtick>): void {
     set(this.tape, symbol, data);
   }
 
-  enrichOptionStrikeData(tick: Optiontick): Enrichedtick {
-    const { symbol } = tick;
-    const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
-    if (keys(defaultSymbols).includes(symbol)) {
-      return tick;
-    }
-    const { index, indexSymbol, rawExpiry, strikeNum, contractType } =
-      this.commonService.processOptionSymbol(symbol);
-    const current = this.storeService.getStoreData<number>(`currentValues.${indexSymbol}`);
-    if (!current) {
-      throw new Error(`Live symbol data not found for ${symbol}`);
-    }
-    const { strikeDiff } = defaultSymbols[indexSymbol];
-    const atm = this.commonService.getATMStrikeNumfromCur(current, strikeDiff);
-    const { expiryType, expiryDate } = this.commonService.processExpiry(rawExpiry);
-    const strikeDiffPts = contractType === 'PE' ? atm - strikeNum : strikeNum - atm;
-    const strikeType = this.commonService.computeStrikeType(strikeNum, current, contractType);
-    const strikesAway = strikeDiffPts / strikeDiff;
-    const strike = `${strikeNum}${contractType}`;
-    const optionVolume = this.enrichWithOptionVolume(indexSymbol, strike, expiryDate);
-    return {
-      index,
-      indexSymbol,
-      rawExpiry,
-      strike,
-      strikeNum,
-      strikeDiffPts,
-      strikesAway,
-      strikeType,
-      contractType,
-      expiryType,
-      expiryDate,
-      ...tick,
-      ...optionVolume,
-    };
-  }
-
-  enrichWithOptionVolume(indexSymbol: string, strike: string, expiryDate: Date) {
-    const date = this.commonService.memoGetStandardDateFmt(new Date(expiryDate));
-    const statPath = `${indexSymbol}.${date}`;
-    const optionChainData = get(this.optionChainVolumeData, `${indexSymbol}.${date}.${strike}`);
-    const optionOiState = get(this.oiStats, statPath) as { highOi: number; highChangeInOi: number };
-    const oiPercentile = optionOiState?.highOi
-      ? (optionChainData?.openInterest || 0) / optionOiState.highOi
-      : 0;
-    set(optionChainData, 'oiPercentile', oiPercentile);
-    return optionChainData;
+  updateStrikeData(symbol: string, data: Partial<Enrichedtick>): void {
+    set(this.tape, symbol, {
+      ...this.tape[symbol],
+      ...data,
+    });
   }
 
   async triggerListen(): Promise<void> {
     this.logger.verbose('Triggering listen for symbol updates');
     const maxWatchItems = this.configService.get('maxWatchItems');
-    const watchListSymbols = this.storeService.getStoreData<string[]>('watchList');
-    this.logger.log(watchListSymbols, 'Listening for symbol updates');
-    const chunkedWatchLists = chunk(watchListSymbols, maxWatchItems);
+    const chunkedWatchLists = chunk(keys(this.tape), maxWatchItems);
     const { appSecret: token } = this.configService.get('broker');
     chunkedWatchLists.forEach((watchListChunk) => {
       const request = {
@@ -140,10 +106,35 @@ export class TapeService {
       fyersApiV2.fyers_connect(request, (data: string) => {
         const tickUpdate = JSON.parse(data);
         if (tickUpdate.d?.['7208']?.length) {
-          const strikeData = tickUpdate.d['7208'][0].v as Optiontick;
-          const { symbol } = strikeData;
-          const enrichedOptiontick = this.enrichOptionStrikeData(strikeData);
-          this.setTapeData(symbol, enrichedOptiontick);
+          const strikeTick = tickUpdate.d['7208'][0].v as Optiontick;
+          const { symbol } = strikeTick;
+          const strikeData = this.getStrikeByStrikeSymbol(symbol);
+          const { strikeDiff, contractType, strikePrice, indexSymbol, expiryDateStr } = strikeData;
+
+          // Enrich option data
+          const current = this.optionChainData[strikeData.indexSymbol].underlyingValue;
+          const atm = this.commonService.getATMStrikeNumfromCur(current, strikeDiff);
+
+          const strikeDiffPts = contractType === 'PE' ? atm - strikePrice : strikePrice - atm;
+          const strikeType = this.commonService.computeStrikeType(strikePrice, current, contractType);
+          const strikesAway = strikeDiffPts / strikeDiff;
+          const strike = `${strikePrice}${contractType}`;
+
+          // Compute OiPercentile
+          const maxOi = this.getMaxOiForChain(indexSymbol, expiryDateStr);
+          const oiPercentile = maxOi ? (+strikeData?.openInterest || 0) / maxOi : 0;
+
+          this.updateStrikeData(symbol, {
+            ...strikeTick,
+            symbol,
+            indexSymbol,
+            strike,
+            strikeDiffPts,
+            strikesAway,
+            strikeType,
+            contractType,
+            oiPercentile,
+          });
         }
       });
     });
@@ -153,58 +144,66 @@ export class TapeService {
    * Fetch nifty option chain from nse site
    * @returns Option chain data
    */
-  watchOptionChainData(): void {
-    // 90 seconds
-    timer(0, 60 * 1000)
-      .pipe(
-        switchMap(() => {
-          const defaultSymbols = this.commonService.getIndexFields(['shortName']);
-          const ocReqs = defaultSymbols.map(({ shortName }) =>
-            this.httpService.get(
-              `https://www.nseindia.com/api/option-chain-indices?symbol=${shortName}`,
-            ),
-          );
-          return merge(...ocReqs);
-        }),
+  fetchNSEOptionChainData() {
+    // 60 seconds
+    return timer(0, 60 * 1000).pipe(
+      // Fetch data from remote json
+      switchMap(() => {
+        const defaultSymbols = this.commonService.getIndexFields(['indexShortName']);
+        const ocReqs = defaultSymbols.map(({ indexShortName }) =>
+          this.httpService.get(`https://www.nseindia.com/api/option-chain-indices?symbol=${indexShortName}`),
+        );
+        return merge(...ocReqs);
+      }),
+        // Catch Error if any
         catchError((error) => {
           this.logger.error(error);
           return throwError(() => error);
         }),
+        // 90 seconds
         retry({
           count: 3,
           delay: 1000 * 90,
           resetOnSuccess: true,
         }),
-        map((data) => {
+
+        // Extract values
+        switchMap((data) => {
           const recordData = get(data, 'data.records.data') as StrikeDataType[];
-          const optionChainList: OptionChainListType = {};
-          forEach(recordData, (option) => {
-            const { symbol } = this.commonService.memoGetIndexObjByIndexName(
-              option?.CE?.underlying || option?.PE?.underlying,
-            );
-            const dateFmt = this.commonService.memoGetStandardDateFmt(new Date(option.expiryDate));
-            const path = `${symbol}.${dateFmt}.${option.strikePrice}`;
-            set(optionChainList, `${path}PE`, option.PE);
-            set(optionChainList, `${path}CE`, option.CE);
-          });
-          return optionChainList;
-        }),
-        tap((data) => {
-          forEach(data, (optionChain, symbol) => {
-            forEach(optionChain, (optionList, expiry) => {
-              let highOi = -Infinity;
-              forEach(optionList, (option) => {
-                highOi = highOi > (option?.openInterest ?? 0) ? highOi : option?.openInterest;
+          const { indexSymbol } = this.commonService.memoGetIndexObjByIndexName(
+            recordData?.[0]?.CE?.underlying || recordData?.[0]?.PE?.underlying,
+          );
+          set(this.optionChainData, `${indexSymbol}.expiryDates`, get(data, 'data.records.expiryDates'));
+          set(this.optionChainData, `${indexSymbol}.timestamp`, get(data, 'data.records.timestamp'));
+          set(this.optionChainData, `${indexSymbol}.underlyingValue`, get(data, 'data.records.underlyingValue'));
+
+          return from(recordData).pipe(
+            // Tap each record and build a Record List of option strikes
+            tap((option) => {
+              const dateFmt = this.commonService.memoGetStandardDateFmt(new Date(option.expiryDate));
+              const path = `${indexSymbol}.ocs.${dateFmt}`;
+              const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
+              forEach(['CE', 'PE'], (contractType) => {
+                if (option[contractType] !== undefined) {
+                  // Set strike data
+                  const strikePath = `${path}.optionChainData.${option.strikePrice}${contractType}`;
+                  const strikeData = {
+                    ...option[contractType],
+                    ...defaultSymbols[indexSymbol],
+                    contractType,
+                    expiryDateStr: dateFmt,
+                  };
+                  set(this.optionChainData, strikePath, strikeData);
+                  
+                  // Extract highestOi data
+                  const maxOi = get(this.optionChainData, `${path}.maxOi`) || 0;
+                  const strikeOi = option[contractType].openInterest;
+                  set(this.optionChainData, `${path}.maxOi`, strikeOi > maxOi ? strikeOi : maxOi);
+                }
               });
-              set(this.oiStats, `${symbol}.${expiry}.highOi`, highOi);
-            });
-          });
+            }),
+          );
         }),
-      )
-      .subscribe({
-        next: (optionChain) => {
-          set(this.optionChainVolumeData, keys(optionChain)[0], values(optionChain)[0]);
-        },
-      });
+    );
   }
 }

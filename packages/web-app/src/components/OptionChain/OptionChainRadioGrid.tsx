@@ -40,16 +40,16 @@ const OptionChainRadioGrid = () => {
 
           <TableBody>
             {optionChain.map(
-              ([strikeNum, { CE, PE }]) =>
+              ([strikePrice, { CE, PE }]) =>
                 CE?.['symbol'] &&
                 PE?.['symbol'] && (
-                  <TableRow key={strikeNum} hover>
+                  <TableRow key={strikePrice} hover>
                     <OptionChainRadioRow
                       symbol={CE['symbol']}
                       contractType="CE"
                       type={CE['strikeType']}
                     />
-                    <StrikeCell align="center">{strikeNum}</StrikeCell>
+                    <StrikeCell align="center">{strikePrice}</StrikeCell>
                     <OptionChainRadioRow
                       symbol={PE['symbol']}
                       contractType="PE"
