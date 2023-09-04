@@ -70,6 +70,8 @@ export class TokenController {
     const webAppRedirect = this.configService.get('webApp');
     const optionChains = entries(this.tapeService.optionChains);
     const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
+
+    // From each option chain select only next expiry
     forEach(optionChains, ([indexSymbol, indexOcs]) => {
       const atmStrike = this.commonService.getATMStrikeNumfromCur(
         indexOcs.underlyingValue,
@@ -77,7 +79,8 @@ export class TokenController {
       );
       const nextExpiry = this.commonService.getStandardDateFmt(new Date(indexOcs.expiryDates[0]));
       const nextExpiryOptionChain = values(indexOcs.ocs[nextExpiry]);
-      const combinedOptionList =  values(nextExpiryOptionChain[0]);
+      const combinedOptionList = values(nextExpiryOptionChain[0]);
+      // For each option item select only the strikes in given range and add the symbol data
       forEach(combinedOptionList, (optionData) => {
         const { strikeExtreme } = defaultSymbols[indexSymbol];
         const peExtreme = atmStrike - strikeExtreme;

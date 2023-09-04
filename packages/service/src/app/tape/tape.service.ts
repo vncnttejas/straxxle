@@ -7,7 +7,7 @@ import { IndexSymbolObjType } from '../types/index-symbol-obj.type';
 import { CommonService } from '../common/common.service';
 import { OptionChainRecords, StrikeDataType } from './types/option-chain.type';
 import { HttpService } from '@nestjs/axios';
-import { catchError, from, merge, retry, switchMap, tap, throwError, timer } from 'rxjs';
+import { catchError, concatMap, from, merge, mergeMap, retry, switchMap, tap, throwError, timer } from 'rxjs';
 
 @Injectable()
 export class TapeService {
@@ -145,87 +145,74 @@ export class TapeService {
    * @returns Option chain data
    */
   fetchNSEOptionChainData() {
-    // 60 seconds
-    let responseCookie = '';
+    const nseFetchData = () => {
+      const defaultSymbols = this.commonService.getIndexFields(['indexShortName']);
+      const ocReqs = defaultSymbols.map(({ indexShortName }) =>
+        this.httpService.get(`https://www.nseindia.com/api/option-chain-indices?symbol=${indexShortName}`),
+      );
+      return merge(...ocReqs);
+    };
+
+    const nseDataCombine = (data) => {
+      const recordData = get(data, 'data.records.data') as StrikeDataType[];
+      const { indexSymbol } = this.commonService.memoGetIndexObjByIndexName(
+        recordData?.[0]?.CE?.underlying || recordData?.[0]?.PE?.underlying,
+      );
+
+      this.logger.log(`Fetching data for ${indexSymbol}`);
+
+      set(this.optionChainData, `${indexSymbol}.expiryDates`, get(data, 'data.records.expiryDates'));
+      set(this.optionChainData, `${indexSymbol}.timestamp`, get(data, 'data.records.timestamp'));
+      set(this.optionChainData, `${indexSymbol}.underlyingValue`, get(data, 'data.records.underlyingValue'));
+
+      return from(recordData).pipe(
+        // Tap each record and build a Record List of option strikes
+        tap((option) => {
+          const dateFmt = this.commonService.memoGetStandardDateFmt(new Date(option.expiryDate));
+          const path = `${indexSymbol}.ocs.${dateFmt}`;
+          const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
+          forEach(['CE', 'PE'], (contractType) => {
+            if (option[contractType] !== undefined) {
+              // Set strike data
+              const strikePath = `${path}.optionChainData.${option.strikePrice}${contractType}`;
+              const strikeData = {
+                ...option[contractType],
+                ...defaultSymbols[indexSymbol],
+                contractType,
+                expiryDateStr: dateFmt,
+              };
+              set(this.optionChainData, strikePath, strikeData);
+
+              // Extract highestOi data
+              const maxOi = get(this.optionChainData, `${path}.maxOi`) || 0;
+              const strikeOi = option[contractType].openInterest;
+              set(this.optionChainData, `${path}.maxOi`, strikeOi > maxOi ? strikeOi : maxOi);
+            }
+          });
+        }),
+      );
+    };
+
+    // 30 seconds
     return timer(0, 30 * 1000).pipe(
       // Fetch data from remote json
-      switchMap(() => {
-        const defaultSymbols = this.commonService.getIndexFields(['indexShortName']);
-        const headers = {
-          Accept:
-            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Accept-Language': 'en,en-US;q=0.9',
-          'Cache-Control': 'max-age=0',
-          'User-Agent':
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+      switchMap(nseFetchData),
 
-          ...(responseCookie.length
-            ? {
-                Cookie: responseCookie,
-              }
-            : {}),
-        };
-        const ocReqs = defaultSymbols.map(({ indexShortName }) =>
-          this.httpService.get(`https://www.nseindia.com/api/option-chain-indices?symbol=${indexShortName}`, {
-            withCredentials: true,
-            headers,
-          }),
-        );
-        return merge(...ocReqs);
-      }),
       // Catch Error if any
       catchError((error) => {
         this.logger.error(error);
         return throwError(() => error);
       }),
-      // 90 seconds
+
+      // 10 seconds
       retry({
         count: 3,
         delay: 1000 * 10,
         resetOnSuccess: true,
       }),
 
-      tap((data) => {
-        responseCookie = data.headers['set-cookie'][0];
-      }),
       // Extract values
-      switchMap((data) => {
-        const recordData = get(data, 'data.records.data') as StrikeDataType[];
-        const { indexSymbol } = this.commonService.memoGetIndexObjByIndexName(
-          recordData?.[0]?.CE?.underlying || recordData?.[0]?.PE?.underlying,
-        );
-        set(this.optionChainData, `${indexSymbol}.expiryDates`, get(data, 'data.records.expiryDates'));
-        set(this.optionChainData, `${indexSymbol}.timestamp`, get(data, 'data.records.timestamp'));
-        set(this.optionChainData, `${indexSymbol}.underlyingValue`, get(data, 'data.records.underlyingValue'));
-
-        return from(recordData).pipe(
-          // Tap each record and build a Record List of option strikes
-          tap((option) => {
-            const dateFmt = this.commonService.memoGetStandardDateFmt(new Date(option.expiryDate));
-            const path = `${indexSymbol}.ocs.${dateFmt}`;
-            const defaultSymbols = this.configService.get('defaultSymbols') as IndexSymbolObjType;
-            forEach(['CE', 'PE'], (contractType) => {
-              if (option[contractType] !== undefined) {
-                // Set strike data
-                const strikePath = `${path}.optionChainData.${option.strikePrice}${contractType}`;
-                const strikeData = {
-                  ...option[contractType],
-                  ...defaultSymbols[indexSymbol],
-                  contractType,
-                  expiryDateStr: dateFmt,
-                };
-                set(this.optionChainData, strikePath, strikeData);
-
-                // Extract highestOi data
-                const maxOi = get(this.optionChainData, `${path}.maxOi`) || 0;
-                const strikeOi = option[contractType].openInterest;
-                set(this.optionChainData, `${path}.maxOi`, strikeOi > maxOi ? strikeOi : maxOi);
-              }
-            });
-          }),
-        );
-      }),
+      mergeMap(nseDataCombine),
     );
   }
 }
