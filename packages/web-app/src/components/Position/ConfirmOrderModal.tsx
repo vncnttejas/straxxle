@@ -31,7 +31,7 @@ function ConfirmOrderModal() {
   const setRowSelection = useResetRecoilState(posGridRowSelectionState);
   const setNewOrderSnackbar = useSetRecoilState(newOrderSnackbarState);
   const resetInlineEdits = useResetRecoilState(inlineEditsState);
-  const orders = symbols?.length
+  const orders = symbols && symbols?.length
     ? flatten(symbols.map((symbol) => inlineEdits[symbol]))
     : flatten(values(inlineEdits));
 

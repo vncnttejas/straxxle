@@ -298,14 +298,23 @@ function PositionTable(): JSX.Element {
             density="compact"
             onRowSelectionModelChange={handleRowSelection}
             rowSelectionModel={rowSelectionModel}
-            onCellEditStart={(params) => {
+            onCellEditStart={(params, event) => {
               switch (params.field) {
                 case 'strike':
+                  if (params.row.posQty === 0) {
+                    event.defaultMuiPrevented = true;
+                    break;
+                  }
                   setOpenModal({ open: true });
                   setCurrentEdit({
                     symbol: params.id,
                     indexSymbol: params.row.indexSymbol,
                   });
+                  break;
+                case 'posQty':
+                  if (params.row.posQty === 0) {
+                    event.defaultMuiPrevented = true;
+                  }
                   break;
                 default:
                   break;

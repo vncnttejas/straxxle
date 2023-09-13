@@ -40,7 +40,7 @@ export function QtyEditField({
   id,
   value,
   field,
-  row,
+  row
 }: GridRenderEditCellParams): JSX.Element {
   const setInlineEdit = useSetRecoilState(inlineEditsSelector(id));
   const setCurrentEdit = useSetRecoilState(currentInlineEdit);

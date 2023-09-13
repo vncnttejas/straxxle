@@ -12,7 +12,7 @@ export function PriceEditField({
   id,
   value,
   field,
-  row,
+  row
 }: GridRenderEditCellParams): JSX.Element {
   const setInlineEdit = useSetRecoilState(inlineEditsSelector(id));
   const setCurrentEdit = useSetRecoilState(currentInlineEdit);
@@ -45,6 +45,9 @@ export function PriceEditField({
         ref={handleRef}
         onChange={handleChange}
         type="number"
+        inputProps={{
+          step: 0.1,
+        }}
       />
     </Box>
   );

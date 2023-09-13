@@ -36,7 +36,9 @@ export const OptionChainRadioModal = () => {
   return (
     <Dialog
       open={modalOpen.open}
-      onClose={() => setModalOpen({ open: false })}
+      onClose={() => {
+        setModalOpen({ open: false });
+      }}
       maxWidth="lg"
       fullWidth={true}
     >
