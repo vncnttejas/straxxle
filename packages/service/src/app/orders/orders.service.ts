@@ -61,9 +61,6 @@ export class OrdersService {
   enrichOrderForDb(order: CreateOrdersRequestDto) {
     const strikeSnapshot = this.tapeService.getStrikeData(order.symbol) as EnrichedOptiontick;
     const lotSize = this.commonService.getLotSizeBySymbol(strikeSnapshot.indexSymbol);
-    if (order.qty % lotSize !== 0) {
-      throw Error(`Order qty can only be multiples of ${lotSize}`);
-    }
     if (!strikeSnapshot) {
       throw Error('Strike Not Found');
     }
@@ -74,6 +71,7 @@ export class OrdersService {
     );
     return {
       ...order,
+      qty: order.qty * lotSize,
       tags,
       strike: strikeSnapshot.strike,
       txnPrice: strikeSnapshot.ask,

@@ -74,11 +74,11 @@ const OiBar = styled(Box)(
   ({ ispe, oilen }: { ispe: number; oilen: number }) => ({
     position: 'absolute',
     ...(ispe ? { left: 0 } : { right: 0 }),
-    top: 5,
+    top: 8,
     background: ispe ? '#547a547a' : '#8d41417a',
-    width: `${oilen * 90}%`,
-    height: '50%',
-    verticalAlign: 'middle',
+    width: `${oilen * 80}%`,
+    height: 10,
+    borderRadius: ispe ? '0 3px 3px 0' : '3px 0 0 3px',
   })
 );
 

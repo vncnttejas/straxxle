@@ -15,12 +15,12 @@ export class CommonService {
   constructor(private readonly configService: ConfigService) {}
 
   addSup(num: number): string {
-    const val = (num - 1) % 10;
-    let sup: string;
+    const val = num % 10;
+    let sup: string = 'th';
     if (val === 1) sup = 'st';
-    if (val === 2) sup = 'nd';
-    if (val === 3) sup = 'rd';
-    return `${num - 1}${sup || 'th'}`;
+    else if (val === 2) sup = 'nd';
+    else if (val === 3) sup = 'rd';
+    return `${num}${sup}`;
   }
 
   getATMStrikeNumfromCur(current: number, strikeDiff: number) {
@@ -106,7 +106,6 @@ export class CommonService {
     if (indexSymbol.length) {
       return indexSymbol[0];
     }
-    this.logger.error(`Invalid shortName provided: ${shortName}`);
     throw new Error(`Invalid shortName provided: ${shortName}`);
   }
 

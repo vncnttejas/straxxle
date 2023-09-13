@@ -21,7 +21,7 @@ import {
 import PositionTable from '../Position/PositionTable';
 import Summary from '../Position/Summary';
 import {
-  confirmOrderModal,
+  confirmOrderModalState,
   newOrderSnackbarState,
   optionChainModalState,
   optionChainRadioModal,
@@ -40,7 +40,7 @@ export const Item = styled(Paper)(({ theme }) => ({
 const Transition = (props: SlideProps) => <Slide {...props} direction="up" />;
 
 function MainPage() {
-  const { open: openConfirmModal } = useRecoilValue(confirmOrderModal);
+  const { open: openConfirmModal } = useRecoilValue(confirmOrderModalState);
   const { open: openRadioModal } = useRecoilValue(optionChainRadioModal);
   const { open: openChainModal } = useRecoilValue(optionChainModalState);
   const { open: openOrderModal } = useRecoilValue(orderListModal);

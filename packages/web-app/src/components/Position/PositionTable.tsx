@@ -6,12 +6,10 @@ import {
   GridRenderCellParams,
   GridRenderEditCellParams,
   GridRowParams,
-  useGridApiContext,
 } from '@mui/x-data-grid';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import React, { Suspense, useCallback, useMemo } from 'react';
-import { Button, TextField, Tooltip, Typography, styled } from '@mui/material';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import { Suspense, useCallback, useMemo } from 'react';
+import { Button, Typography, styled } from '@mui/material';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import BackspaceIcon from '@mui/icons-material/Backspace';
@@ -20,18 +18,19 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { produce } from 'immer';
 import {
   actionDisplaySelector,
-  confirmOrderModal,
+  confirmOrderModalState,
   currentInlineEdit,
   strikeWiseDataSelector,
-  inlineEditsSelector,
-  inlineEditsState,
   optionChainRadioModal,
   posGridRowSelectionState,
+  inlineEditsState,
 } from '../../utils/state';
 import Loading from '../Common/Loading';
 import { set } from 'lodash';
 import { getNextStrikeSymbol } from '../../utils/order';
 import { IdType } from '../../utils/types';
+import { CustomQtyField, QtyEditField } from './QtyField';
+import { StrikeField } from './StrikeField';
 
 const PositionGrid = styled(DataGrid)(() => ({
   '& .stxl-row-inactive': {
@@ -51,104 +50,13 @@ const PositionGrid = styled(DataGrid)(() => ({
   },
 }));
 
-function CustomQtyField(props: GridRenderCellParams): JSX.Element {
-  const { id, value, row } = props;
-  const setVal = useSetRecoilState(inlineEditsSelector(id));
-  return (
-    <>
-      <Box>
-        <Tooltip title={row?.prevQty || row?.posQty} placement="left">
-          <span>{value}</span>
-        </Tooltip>
-      </Box>
-      {row?.qtyEdited && (
-        <Box>
-          <DeleteForeverIcon
-            sx={{
-              fontSize: 20,
-              color: 'pink',
-              p: 0,
-              cursor: 'pointer',
-            }}
-            onClick={() => setVal({ resetQty: id })}
-          />
-        </Box>
-      )}
-    </>
-  );
-}
-
-function StrikeField(props: GridRenderCellParams): JSX.Element {
-  const { id, value, row } = props;
-  const setVal = useSetRecoilState(inlineEditsSelector(id));
-  return (
-    <>
-      <Box sx={{ position: 'relative ' }}>
-        <Tooltip title={row?.prevStrike || row?.strike} placement="left">
-          <span>{value}</span>
-        </Tooltip>
-      </Box>
-      {row?.strikeEdited && (
-        <Box>
-          <DeleteForeverIcon
-            sx={{
-              fontSize: 20,
-              color: 'pink',
-              p: 0,
-              cursor: 'pointer',
-            }}
-            onClick={() => setVal({ resetStrike: id })}
-          />
-        </Box>
-      )}
-    </>
-  );
-}
-
-function QtyEditField({
-  id,
-  value,
-  field,
-  row,
-}: GridRenderEditCellParams): JSX.Element {
-  const setInlineEdit = useSetRecoilState(inlineEditsSelector(id));
-  const setCurrentEdit = useSetRecoilState(currentInlineEdit);
-  const apiRef = useGridApiContext();
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = +e.target.value;
-    apiRef.current.setEditCellValue({ id, field, value: newValue });
-    setCurrentEdit({ symbol: id, indexSymbol: row.indexSymbol });
-    setInlineEdit((prev) => ({ ...prev, newQty: newValue }));
-  };
-
-  const handleRef = (element: HTMLDivElement | null) => {
-    if (element) {
-      const input = element.querySelector(`input[value="${value}"]`);
-      (input as HTMLElement)?.focus();
-    }
-  };
-
-  return (
-    <Box sx={{ width: '100%' }}>
-      <TextField
-        name="rating"
-        value={value}
-        ref={handleRef}
-        onChange={handleChange}
-        type="number"
-      />
-    </Box>
-  );
-}
-
 function PositionTable(): JSX.Element {
   const strikeData = useRecoilValue(strikeWiseDataSelector);
   const strikeDataList = Object.values(strikeData);
   const setOpenModal = useSetRecoilState(optionChainRadioModal);
   const setCurrentEdit = useSetRecoilState(currentInlineEdit);
   const setSelection = useSetRecoilState(inlineEditsState);
-  const setConfirmModal = useSetRecoilState(confirmOrderModal);
+  const setConfirmModal = useSetRecoilState(confirmOrderModalState);
   const [rowSelectionModel, setRowSelectionModel] = useRecoilState(
     posGridRowSelectionState
   );
@@ -174,7 +82,7 @@ function PositionTable(): JSX.Element {
 
   const triggerOrder = useCallback(
     (symbols: IdType[]) => () => {
-      setConfirmModal({ open: true, symbols });
+      setConfirmModal({ open: true, symbols, view: 'update' });
     },
     [setConfirmModal]
   );
@@ -189,7 +97,7 @@ function PositionTable(): JSX.Element {
           return draft;
         })
       );
-      setConfirmModal({ open: true, symbols });
+      setConfirmModal({ open: true, symbols, view: 'update' });
     },
     [setConfirmModal, setSelection]
   );

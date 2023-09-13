@@ -2,20 +2,12 @@ import {
   DefaultValue, atom, selector, selectorFamily,
 } from 'recoil';
 import { produce } from 'immer';
-import { flatten, forEach, intersection, keyBy, orderBy, pick, set as setObject } from 'lodash';
+import { flatten, forEach, intersection, keyBy, map, orderBy, pick, set as setObject } from 'lodash';
 import { processSymbol } from './order';
 import {
   Basket, ConfirmModalType, IOptionChainRow, IOrder, IOrderRequest, IPosition, IPositionSummary, IdType,
   IndexedOptionSkeletonType, IndexedStrikeContractType, InlineEditType, OrderCreateType,
 } from './types';
-
-export const appConstants = atom({
-  key: 'appConstants',
-  default: {
-    freezeQty: 18,
-    lotSize: 50,
-  },
-});
 
 export const optionChainContract = atom({
   key: 'optionChainContract',
@@ -50,7 +42,6 @@ export const optionChainPriceSelector = selectorFamily({
   },
 });
 
-
 export const optionChainOiLenSelector = selectorFamily({
   key: 'optionChainOiLenSelector',
   get:
@@ -83,13 +74,19 @@ export const optionChainDiffSelector = selectorFamily({
 
 export const optionChainStrikeSelector = selectorFamily({
   key: 'optionChainStrikeSelector',
-  get:
-    (symbol: IdType) =>
-    ({ get }) => {
-      const optionChain = get(optionChainSelector);
-      return optionChain[symbol]?.strike;
-    },
+  get: (symbol: IdType) => ({ get }) => {
+    const optionChain = get(optionChainSelector);
+    return optionChain[symbol]?.strike;
+  }
 });
+
+export const optionChainExpirySelector = selectorFamily({
+  key: 'optionChainExpirySelector',
+  get: (symbol: IdType) => ({ get }) => {
+    const optionChain = get(optionChainSelector);
+    return optionChain[symbol]?.expiryDate;
+  }
+})
 
 export const optionChainListSelector = selector({
   key: 'optionChainListSelector',
@@ -103,7 +100,6 @@ export const optionChainModalState = atom({
   key: 'optionChainModalState',
   default: {
     open: false,
-    enable: true,
   },
 });
 
@@ -114,11 +110,13 @@ export const optionChainRadioModal = atom({
   },
 });
 
-export const confirmOrderModal = atom<ConfirmModalType>({
-  key: 'confirmOrderModal',
+export const confirmOrderModalState = atom<ConfirmModalType>({
+  key: 'confirmOrderModalState',
   default: {
     open: false,
+    // Used when single strike rockets (triggers) are clicked from position
     symbols: [],
+    view: null,
   },
 });
 
@@ -189,6 +187,9 @@ export const openFeesCollapseState = atom({
   default: false,
 });
 
+/**
+ * Selected strikes
+ */
 export const basketState = atom<Basket>({
   key: 'basket',
   default: {},
@@ -239,35 +240,43 @@ export const newOrderSnackbarState = atom({
 
 export const basketStateSelector = selectorFamily({
   key: 'basketStateSelector',
-  get:
-    (id: IdType) =>
-    ({ get }) =>
-      get(basketSelector(id)),
-  set:
-    (id: IdType) =>
-    ({ set, reset }, newValue) => {
-      if (!id) return;
-      if (!newValue) return;
-      if (newValue instanceof DefaultValue) {
-        reset(basketSelector(id));
-        set(selectedStrikesState, (prev) =>
-          produce(prev, (draft) => {
-            delete draft[id];
-            return draft;
-          })
-        );
-        return;
-      }
-      if (+newValue.qty) {
-        set(basketSelector(id), newValue);
-        set(selectedStrikesState, (prev) =>
-          produce(prev, (draft) => {
-            draft[id] = newValue;
-            return draft;
-          })
-        );
-      }
-    },
+  get: (id: IdType) => ({ get }) => get(basketSelector(id)),
+  set: (id: IdType) => ({ set, reset }, newValue) => {
+    if (!id) return;
+    if (!newValue) return;
+    if (newValue instanceof DefaultValue) {
+      reset(basketSelector(id));
+      set(selectedStrikesState, (prev) =>
+        produce(prev, (draft) => {
+          delete draft[id];
+          return draft;
+        })
+      );
+      return;
+    }
+    if (+newValue.qty) {
+      set(basketSelector(id), newValue);
+      set(selectedStrikesState, (prev) =>
+        produce(prev, (draft) => {
+          draft[id] = newValue;
+          return draft;
+        })
+      );
+    }
+  },
+});
+
+export const freshOrderBasketSelector = selector({
+  key: 'freshOrderBasketSelector',
+  get: ({ get }) => {
+    const selectedStrikes = get(selectedStrikesState);
+    return map(selectedStrikes, (basket, symbol) => ({
+      symbol,
+      qty: +basket.qty,
+      expiry: get(optionChainExpirySelector(symbol)),
+      type: 'add' as OrderCreateType,
+    }))
+  }
 });
 
 export const selectedStrikesSelector = selector({
@@ -332,6 +341,10 @@ export const optionChainStrikesListSelector = selector<
   },
 });
 
+/**
+ * Holds the data for the current inline edit
+ * The strike that's currently being edited, this is used when qty or strike is used to move around
+ */
 export const currentInlineEdit = atom<{ symbol: IdType; indexSymbol: string }>({
   key: 'currentInlineEdit',
   default: {
@@ -432,7 +445,6 @@ export const orderViewSelector = selector({
   key: 'orderViewSelector',
   get: ({ get }) => {
     const inlineEdits = get(strikeWiseDataSelector);
-    const { lotSize } = get(appConstants);
     const positionList = Object.values(inlineEdits);
     const orderList: IOrderRequest = {};
     forEach(positionList, (item) => {
@@ -449,13 +461,13 @@ export const orderViewSelector = selector({
         list = [
           {
             symbol: item.id,
-            qty: (0 - item.prevQty) * lotSize,
+            qty: (0 - item.prevQty),
             expiry: item.expiry,
             type: 'remove' as OrderCreateType,
           },
           {
             symbol: item.newSymbol,
-            qty: item.posQty * lotSize,
+            qty: item.posQty,
             expiry: item.expiry,
             type: 'add' as OrderCreateType,
           },
@@ -464,7 +476,7 @@ export const orderViewSelector = selector({
         list = [
           {
             symbol: item.symbol,
-            qty: (item.posQty - item.prevQty) * lotSize,
+            qty: (item.posQty - item.prevQty),
             expiry: item.expiry,
             type: 'add' as OrderCreateType,
           },
@@ -473,6 +485,20 @@ export const orderViewSelector = selector({
       orderList[item.id] = list;
     });
     return orderList;
+  },
+});
+
+/**
+ * Order basket common selector for edits for adds
+ */
+export const orderBasketSelector = selector({
+  key: 'orderBasketSelector',
+  get: ({ get }) => {
+    const orderBasketView = get(confirmOrderModalState);
+    if (!orderBasketView.view) {
+      return;
+    }
+    return orderBasketView.view === 'fresh' ? get(freshOrderBasketSelector) : get(orderViewSelector);
   },
 });
 
@@ -501,4 +527,13 @@ export const actionDisplaySelector = selector({
     btnDisplayState.enableMove = selectedLength > 0;
     return btnDisplayState;
   },
+});
+
+
+/**
+ * Controls if the confirm modal can be closed via escape key
+ */
+export const disableEscapeOnConfirmModalState = atom({
+  key: 'disableEscapeOnConfirmModalState',
+  default: false,
 });

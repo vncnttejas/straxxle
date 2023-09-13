@@ -7,7 +7,20 @@ import { IndexSymbolObjType } from '../types/index-symbol-obj.type';
 import { CommonService } from '../common/common.service';
 import { OptionChainRecords, StrikeDataType } from './types/option-chain.type';
 import { HttpService } from '@nestjs/axios';
-import { catchError, concatMap, from, merge, mergeMap, retry, switchMap, tap, throwError, timer } from 'rxjs';
+import {
+  catchError,
+  concatMap,
+  filter,
+  from,
+  map,
+  merge,
+  mergeMap,
+  retry,
+  switchMap,
+  tap,
+  throwError,
+  timer,
+} from 'rxjs';
 
 @Injectable()
 export class TapeService {
@@ -155,11 +168,10 @@ export class TapeService {
 
     const nseDataCombine = (data) => {
       const recordData = get(data, 'data.records.data') as StrikeDataType[];
-      const { indexSymbol } = this.commonService.memoGetIndexObjByIndexName(
-        recordData?.[0]?.CE?.underlying || recordData?.[0]?.PE?.underlying,
-      );
+      const underlyingIndex = recordData?.[0]?.CE?.underlying || recordData?.[0]?.PE?.underlying;
+      const { indexSymbol } = this.commonService.memoGetIndexObjByIndexName(underlyingIndex);
 
-      this.logger.log(`Fetching data for ${indexSymbol}`);
+      this.logger.log(`Processing data for ${indexSymbol}`);
 
       set(this.optionChainData, `${indexSymbol}.expiryDates`, get(data, 'data.records.expiryDates'));
       set(this.optionChainData, `${indexSymbol}.timestamp`, get(data, 'data.records.timestamp'));
@@ -206,13 +218,19 @@ export class TapeService {
 
       // 10 seconds
       retry({
-        count: 3,
+        count: 9,
         delay: 1000 * 10,
         resetOnSuccess: true,
       }),
 
+      // Don't proceed if record data is empty
+      filter((data) => {
+        const recordData = get(data, 'data.records.data') as StrikeDataType[];
+        return recordData !== undefined && recordData.length > 1;
+      }),
+
       // Extract values
-      mergeMap(nseDataCombine),
+      concatMap(nseDataCombine),
     );
   }
 }

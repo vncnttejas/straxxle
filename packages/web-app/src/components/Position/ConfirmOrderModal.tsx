@@ -1,29 +1,78 @@
 import {
-  Box, Button, Dialog, Paper, Table, TableBody, TableCell, TableHead, TableRow, Typography,
+  Box, Button, Dialog, Paper, Typography,
 } from '@mui/material';
 import {
   useRecoilState, useRecoilValue, useResetRecoilState, useSetRecoilState,
 } from 'recoil';
 import { flatten, values } from 'lodash';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import axios from 'axios';
 import {
-  confirmOrderModal,
+  confirmOrderModalState,
+  disableEscapeOnConfirmModalState,
   inlineEditsState,
   newOrderSnackbarState,
-  orderViewSelector,
+  optionChainModalState,
+  optionChainSelector,
+  orderBasketSelector,
   posGridRowSelectionState,
 } from '../../utils/state';
+import { DataGrid, GridRenderEditCellParams } from '@mui/x-data-grid';
+import { QtyEditField } from './QtyField';
+import { PriceEditField } from './PriceField';
+import { IOrderRequest } from '../../utils/types';
 
 function ConfirmOrderModal() {
-  const [{ open, symbols }, setModalOpen] = useRecoilState(confirmOrderModal);
-  const inlineEdits = useRecoilValue(orderViewSelector);
+  const [{ open, symbols }, setModalOpen] = useRecoilState(confirmOrderModalState);
+  const optionChain = useRecoilValue(optionChainSelector);
+  const disableEscapeOnModal = useRecoilValue(disableEscapeOnConfirmModalState);
+  const setOptionChainModal = useSetRecoilState(optionChainModalState);
+  const inlineEdits = useRecoilValue(orderBasketSelector) as IOrderRequest;
   const setRowSelection = useResetRecoilState(posGridRowSelectionState);
   const setNewOrderSnackbar = useSetRecoilState(newOrderSnackbarState);
   const resetInlineEdits = useResetRecoilState(inlineEditsState);
-  const orderList = symbols?.length
+  const orders = symbols?.length
     ? flatten(symbols.map((symbol) => inlineEdits[symbol]))
     : flatten(values(inlineEdits));
+
+  const orderList = orders.map((order) => ({
+    ...order,
+    price: optionChain[order.symbol as string].lp,
+    id: order.symbol,
+  }));
+
+  const colunns = useMemo(() => [
+    {
+      field: 'symbol',
+      headerName: 'Symbol',
+      width: 200,
+    },
+    {
+      field: 'expiry',
+      headerName: 'Expiry',
+      width: 150,
+    },
+    {
+      field: 'qty',
+      headerName: 'Quantity',
+      width: 100,
+      editable: true,
+      type: 'number',
+      renderEditCell: (params: GridRenderEditCellParams) => (
+        <QtyEditField {...params} />
+      ),
+    },
+    {
+      field: 'price',
+      headerName: 'Txn Price',
+      width: 100,
+      editable: true,
+      type: 'number',
+      renderEditCell: (params: GridRenderEditCellParams) => (
+        <PriceEditField {...params} />
+      ),
+    },
+  ], [disableEscapeOnModal]);
 
   const handleClick = useCallback(async () => {
     try {
@@ -35,7 +84,9 @@ function ConfirmOrderModal() {
       });
       resetInlineEdits();
       setRowSelection();
-      setModalOpen({ open: false, symbols: [] });
+      setModalOpen({ open: false, symbols: [], view: null });
+      setOptionChainModal({ open: false });
+      
     } catch (e) {
       let message = 'Order creation failed';
       if (e instanceof Error) {
@@ -48,38 +99,27 @@ function ConfirmOrderModal() {
   return (
     <Dialog
       open={open}
+      disableEscapeKeyDown={disableEscapeOnModal}
       onClose={() => {
-        setModalOpen({ open: false });
+        setModalOpen({ open: false, view: null });
       }}
       maxWidth="md"
       fullWidth
     >
-      <Paper sx={{ width: '100%', p: 1 }}>
+      <Paper sx={{ width: '100%', p: 2 }}>
         <Typography variant="h5" p={1}>
           Order Summary
         </Typography>
-        <Table sx={{ mb: 3 }}>
-          <TableHead>
-            <TableRow>
-              <TableCell>Symbol</TableCell>
-              <TableCell>Expiry</TableCell>
-              <TableCell>Qty (Contracts)</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {orderList.map((order) => (
-              <TableRow
-                key={order.symbol}
-                className={`stxl-row-${order?.type}`}
-              >
-                <TableCell>{order.symbol}</TableCell>
-                <TableCell>{order.expiry}</TableCell>
-                <TableCell>{order.qty}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <Box px={5}>
+        <DataGrid
+          rows={orderList}
+          columns={colunns}
+          hideFooter
+          density="compact"
+          disableColumnMenu
+          checkboxSelection
+          paginationModel={{ page: 0, pageSize: 100 }}
+        />
+        <Box pt={5}>
           <Button
             variant="contained"
             color="error"

@@ -128,6 +128,8 @@ export interface IBasketValue {
 
 export type OrderCreateType = 'add' | 'remove';
 
+export type OrderViewType = null | 'fresh' | 'update';
+
 export interface IOrderValue {
   symbol: IdType | undefined;
   qty: number;
@@ -139,7 +141,11 @@ export type IOrderRequest = Record<IdType, IOrderValue[]>;
 
 export type Basket = Record<IdType, IBasketValue>;
 
-export type ConfirmModalType = { open: boolean; symbols?: IdType[] };
+export type ConfirmModalType = {
+  open: boolean;
+  symbols?: IdType[];
+  view: OrderViewType,
+};
 
 export type TrimmedOptionType = Pick<
   IOptionChainValues,
