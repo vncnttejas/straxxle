@@ -498,8 +498,10 @@ export const orderBasketSelector = selector({
     if (!orderBasketView.view) {
       return;
     }
-    return orderBasketView.view === 'fresh' ? get(freshOrderBasketSelector) : get(orderViewSelector);
-  },
+    return orderBasketView.view === 'fresh'
+      ? get(freshOrderBasketSelector)
+      : get(orderViewSelector);
+  }
 });
 
 export const posGridRowSelectionState = atom<IdType[]>({
